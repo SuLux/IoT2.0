@@ -20,7 +20,7 @@
 
 #include "option.h"
 #include "encode.h"		/* for coap_fls() */
-#include "debug_coap.h"
+#include "debug.h"
 
 coap_opt_t *
 options_start(coap_pdu_t *pdu) {

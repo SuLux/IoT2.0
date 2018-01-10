@@ -37,7 +37,7 @@
 #include <lwip/timeouts.h>
 #endif
 
-#include "debug_coap.h"
+#include "debug.h"
 #include "mem.h"
 #include "str.h"
 #include "async.h"

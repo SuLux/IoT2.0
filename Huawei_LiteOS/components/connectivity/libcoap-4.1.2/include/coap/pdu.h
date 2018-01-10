@@ -32,12 +32,28 @@
 #define REST_MAX_CHUNK_SIZE     128
 #endif
 
+#define COAP_HEADER_LEN                      4 /* | version:0x03 type:0x0C tkl:0xF0 | code | mid:0x00FF | mid:0xFF00 | */
+#define COAP_MAX_ACCEPT_NUM                  2 /* The maximum number of accept preferences to parse/store */
 #define COAP_MAX_RETRANSMIT                  4
 #define COAP_RESPONSE_TIMEOUT                2
 #define COAP_TOKEN_LEN                       8 /* The maximum number of bytes for the Token */
+#define COAP_ETAG_LEN                        8 /* The maximum number of bytes for the ETag */
+
 #define COAP_ACK_RANDOM_FACTOR               1.5
 #define COAP_MAX_TRANSMIT_WAIT               ((COAP_RESPONSE_TIMEOUT * ( (1 << (COAP_MAX_RETRANSMIT + 1) ) - 1) * COAP_ACK_RANDOM_FACTOR))
-#define NO_ERROR                             0
+
+#define COAP_MAX_OPTION_HEADER_LEN           5
+
+#define COAP_HEADER_VERSION_MASK             0xC0
+#define COAP_HEADER_VERSION_POSITION         6
+#define COAP_HEADER_TYPE_MASK                0x30
+#define COAP_HEADER_TYPE_POSITION            4
+#define COAP_HEADER_TOKEN_LEN_MASK           0x0F
+#define COAP_HEADER_TOKEN_LEN_POSITION       0
+
+#define COAP_HEADER_OPTION_DELTA_MASK        0xF0
+#define COAP_HEADER_OPTION_SHORT_LENGTH_MASK 0x0F
+
 
 #ifndef MIN
 #define MIN(a, b) ((a) < (b)? (a) : (b))
@@ -93,6 +109,7 @@ typedef enum {
 #define COAP_OPTION_URI_QUERY      15 /* C, String, 1-255 B, (none) */
 #define COAP_OPTION_ACCEPT         17 /* C, uint,   0-2 B, (none) */
 #define COAP_OPTION_LOCATION_QUERY 20 /* E, String,   0-255 B, (none) */
+#define COAP_OPTION_SIZE           28 /* 0-4 B */
 #define COAP_OPTION_PROXY_URI      35 /* C, String, 1-1034 B, (none) */
 #define COAP_OPTION_PROXY_SCHEME   39 /* C, String, 1-255 B, (none) */
 #define COAP_OPTION_SIZE1          60 /* E, uint, 0-4 B, (none) */
@@ -168,6 +185,44 @@ char *coap_response_phrase(unsigned char code);
 #  define COAP_RESPONSE_X_241    241   /* Uri-Authority Option required by server */
 #endif
 #define COAP_RESPONSE_X_242    COAP_RESPONSE_CODE(402)  /* Critical Option not supported */
+
+/* CoAP response codes */
+typedef enum {
+  NO_ERROR = 0,
+
+  CREATED_2_01 = 65,                    /* CREATED */
+  DELETED_2_02 = 66,                    /* DELETED */
+  VALID_2_03 = 67,                      /* NOT_MODIFIED */
+  CHANGED_2_04 = 68,                    /* CHANGED */
+  CONTENT_2_05 = 69,                    /* OK */
+
+  BAD_REQUEST_4_00 = 128,               /* BAD_REQUEST */
+  UNAUTHORIZED_4_01 = 129,              /* UNAUTHORIZED */
+  BAD_OPTION_4_02 = 130,                /* BAD_OPTION */
+  FORBIDDEN_4_03 = 131,                 /* FORBIDDEN */
+  NOT_FOUND_4_04 = 132,                 /* NOT_FOUND */
+  METHOD_NOT_ALLOWED_4_05 = 133,        /* METHOD_NOT_ALLOWED */
+  NOT_ACCEPTABLE_4_06 = 134,            /* NOT_ACCEPTABLE */
+  PRECONDITION_FAILED_4_12 = 140,       /* BAD_REQUEST */
+  REQUEST_ENTITY_TOO_LARGE_4_13 = 141,  /* REQUEST_ENTITY_TOO_LARGE */
+  UNSUPPORTED_MEDIA_TYPE_4_15 = 143,    /* UNSUPPORTED_MEDIA_TYPE */
+
+  INTERNAL_SERVER_ERROR_5_00 = 160,     /* INTERNAL_SERVER_ERROR */
+  NOT_IMPLEMENTED_5_01 = 161,           /* NOT_IMPLEMENTED */
+  BAD_GATEWAY_5_02 = 162,               /* BAD_GATEWAY */
+  SERVICE_UNAVAILABLE_5_03 = 163,       /* SERVICE_UNAVAILABLE */
+  GATEWAY_TIMEOUT_5_04 = 164,           /* GATEWAY_TIMEOUT */
+  PROXYING_NOT_SUPPORTED_5_05 = 165,    /* PROXYING_NOT_SUPPORTED */
+
+  /* Erbium errors */
+  MEMORY_ALLOCATION_ERROR = 192,
+  PACKET_SERIALIZATION_ERROR,
+
+  /* Erbium hooks */
+  MANUAL_RESPONSE
+
+} coap_status_t;
+
 
 /* CoAP media type encoding */
 
@@ -297,6 +352,7 @@ typedef struct {
   unsigned short max_delta; /**< highest option number */
   unsigned short length;    /**< PDU length (including header, options, data) */
   unsigned char *data;      /**< payload */
+  uint16_t payload_len;
   multi_option_t *uri_path;
 	multi_option_t *uri_query;
 	multi_option_t *location_path;
@@ -312,6 +368,16 @@ typedef struct {
   uint8_t block1_more;
   uint16_t block1_size;
   uint32_t block1_offset;
+  uint32_t max_age;
+  uint8_t etag_len;
+  uint8_t etag[COAP_ETAG_LEN];
+  uint8_t if_match_len;
+  uint8_t if_match[COAP_ETAG_LEN];
+  uint8_t if_none_match;
+  uint16_t uri_port;
+  size_t uri_host_len;
+  const uint8_t *uri_host;
+  uint32_t size;   //option size
 #ifdef WITH_LWIP
   struct pbuf *pbuf;        /**< lwIP PBUF. The package data will always reside
                              *    inside the pbuf's payload, but this pointer
@@ -404,7 +470,7 @@ void coap_delete_pdu(coap_pdu_t *);
 int coap_pdu_parse(unsigned char *data,
                    size_t length,
                    coap_pdu_t *result);
-
+coap_status_t coap_parse_message(void *packet, uint8_t *data, uint16_t data_len);
 int coap_set_status_code(void *packet, unsigned int code);
 void coap_add_multi_option(multi_option_t **dst, uint8_t *option, size_t option_len, uint8_t is_static);
 void free_multi_option(multi_option_t *dst);
@@ -420,6 +486,8 @@ int coap_set_header_block2(void *packet, uint32_t num, uint8_t more, uint16_t si
 int coap_get_header_block2(void *packet, uint32_t *num, uint8_t *more, uint16_t *size, uint32_t *offset);
 int coap_set_header_block1(void *packet, uint32_t num, uint8_t more, uint16_t size);
 int coap_get_header_block1(void *packet, uint32_t *num, uint8_t *more, uint16_t *size, uint32_t *offset);
+int coap_set_header_uri_query(void *packet, const char *query);
+
 /**
  * Adds token of length @p len to @p pdu.
  * Adding the token destroys any following contents of the pdu. Hence options

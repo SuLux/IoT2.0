@@ -30,7 +30,7 @@
 #endif
 
 #include "block.h"
-#include "debug_coap.h"
+#include "debug.h"
 #include "encode.h"
 #include "net.h"
 

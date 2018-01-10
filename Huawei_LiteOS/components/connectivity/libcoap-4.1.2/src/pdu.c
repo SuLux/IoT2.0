@@ -20,7 +20,7 @@
 #include <arpa/inet.h>
 #endif
 
-#include "debug_coap.h"
+#include "debug.h"
 #include "pdu.h"
 #include "option.h"
 #include "encode.h"
@@ -29,6 +29,8 @@
 #ifdef WITH_LWIP
 #include "lwip/def.h"
 #endif
+
+const char *coap_error_message = "";
 
 void
 coap_pdu_clear(coap_pdu_t *pdu, size_t size) {
@@ -170,6 +172,36 @@ coap_add_token(coap_pdu_t *pdu, size_t len, const unsigned char *data) {
 
   return 1;
 }
+
+
+int
+coap_set_header_uri_query(void *packet, const char *query)
+{
+    int length = 0;
+    coap_pdu_t *const coap_pkt = (coap_pdu_t *) packet;
+
+    free_multi_option(coap_pkt->uri_query);
+    coap_pkt->uri_query = NULL;
+
+    if (query[0]=='?') ++query;
+
+    do
+    {
+        int i = 0;
+
+        while (query[i] != 0 && query[i] != '&') i++;
+        coap_add_multi_option(&(coap_pkt->uri_query), (uint8_t *)query, i, 0);
+		coap_add_option(coap_pkt, COAP_OPTION_URI_QUERY, i, (unsigned char *)query);
+
+        if (query[i] == '&') i++;
+        query += i;
+        length += i;
+    } while (query[0] != 0);
+
+    //SET_OPTION(coap_pkt, COAP_OPTION_URI_QUERY);
+    return length;
+ }
+
 
 /** @FIXME de-duplicate code with coap_add_option_later */
 size_t
@@ -374,6 +406,244 @@ next_option_safe(coap_opt_t **optp, size_t *length, coap_pdu_t *pdu) {
 
   return optsize;
 }
+
+coap_status_t
+coap_parse_message(void *packet, uint8_t *data, uint16_t data_len)
+{
+  coap_pdu_t *const coap_pkt = (coap_pdu_t *) packet;
+  uint8_t *current_option;
+  unsigned int option_number = 0;
+  unsigned int option_delta = 0;
+  size_t option_length = 0;
+  unsigned int *x;
+
+  /* Initialize packet */
+  //memset(coap_pkt, 0, sizeof(coap_pdu_t));
+
+  /* pointer to packet bytes */
+  coap_pkt->pbuf->payload = (void *)data;
+	char * payload = (char *)data;
+
+  /* parse header fields */
+  coap_pkt->hdr->version = (COAP_HEADER_VERSION_MASK & payload[0])>>COAP_HEADER_VERSION_POSITION;
+  coap_pkt->hdr->type = (COAP_HEADER_TYPE_MASK & payload[0])>>COAP_HEADER_TYPE_POSITION;
+  coap_pkt->hdr->token_length = MIN(COAP_TOKEN_LEN, (COAP_HEADER_TOKEN_LEN_MASK & payload[0])>>COAP_HEADER_TOKEN_LEN_POSITION);
+  coap_pkt->hdr->code = payload[1];
+  coap_pkt->hdr->id = payload[2]<<8 | payload[3];
+
+  if (coap_pkt->hdr->version != 1)
+  {
+    coap_error_message = "CoAP version must be 1";
+    return BAD_REQUEST_4_00;
+  }
+
+  current_option = data + COAP_HEADER_LEN;
+
+  if (coap_pkt->hdr->token_length!= 0)
+  {
+      memcpy(coap_pkt->hdr->token, current_option, coap_pkt->hdr->token_length);
+      //SET_OPTION(coap_pkt, COAP_OPTION_TOKEN);
+
+      printf("Token (len %u) [0x%02X%02X%02X%02X%02X%02X%02X%02X]\n", coap_pkt->hdr->token_length,
+        coap_pkt->hdr->token[0],
+        coap_pkt->hdr->token[1],
+        coap_pkt->hdr->token[2],
+        coap_pkt->hdr->token[3],
+        coap_pkt->hdr->token[4],
+        coap_pkt->hdr->token[5],
+        coap_pkt->hdr->token[6],
+        coap_pkt->hdr->token[7]
+      ); /*FIXME always prints 8 bytes */
+  }
+
+  /* parse options */
+  current_option += coap_pkt->hdr->token_length;
+
+  while (current_option < data+data_len)
+  {
+    /* Payload marker 0xFF, currently only checking for 0xF* because rest is reserved */
+    if ((current_option[0] & 0xF0)==0xF0)
+    {
+      coap_pkt->data = ++current_option;
+      coap_pkt->payload_len = data_len - (coap_pkt->data - data);
+
+      break;
+    }
+
+    option_delta = current_option[0]>>4;
+    option_length = current_option[0] & 0x0F;
+    ++current_option;
+
+    /* avoids code duplication without function overhead */
+    x = &option_delta;
+    do
+    {
+      if (*x==13)
+      {
+        *x += current_option[0];
+        ++current_option;
+      }
+      else if (*x==14)
+      {
+        *x += 255;
+        *x += current_option[0]<<8;
+        ++current_option;
+        *x += current_option[0];
+        ++current_option;
+      }
+    }
+    while (x!=(unsigned int *)&option_length && (x=(unsigned int *)&option_length)!=NULL);
+
+    option_number += option_delta;
+
+    if (current_option + option_length > data + data_len)
+    {
+        printf("OPTION %u (delta %u, len %u) has invalid length.\n", option_number, option_delta, option_length);
+        return BAD_REQUEST_4_00;
+    }
+    else
+    {
+        printf("OPTION %u (delta %u, len %u): ", option_number, option_delta, option_length);
+    }
+
+    //SET_OPTION(coap_pkt, option_number);
+
+    switch (option_number)
+    {
+      case COAP_OPTION_CONTENT_TYPE:
+        coap_pkt->content_type = (coap_content_type_t)coap_parse_int_option(current_option, option_length);
+        printf("Content-Format [%u]\n", coap_pkt->content_type);
+        break;
+      case COAP_OPTION_MAXAGE:
+        coap_pkt->max_age = coap_parse_int_option(current_option, option_length);
+        printf("Max-Age [%lu]\n", coap_pkt->max_age);
+        break;
+      case COAP_OPTION_ETAG:
+        coap_pkt->etag_len = (uint8_t)(MIN(COAP_ETAG_LEN, option_length));
+        memcpy(coap_pkt->etag, current_option, coap_pkt->etag_len);
+        printf("ETag %u [0x%02X%02X%02X%02X%02X%02X%02X%02X]\n", coap_pkt->etag_len,
+          coap_pkt->etag[0],
+          coap_pkt->etag[1],
+          coap_pkt->etag[2],
+          coap_pkt->etag[3],
+          coap_pkt->etag[4],
+          coap_pkt->etag[5],
+          coap_pkt->etag[6],
+          coap_pkt->etag[7]
+        ); /*FIXME always prints 8 bytes */
+        break;
+      case COAP_OPTION_ACCEPT:
+        if (coap_pkt->accept_num < COAP_MAX_ACCEPT_NUM)
+        {
+          coap_pkt->accept[coap_pkt->accept_num] = coap_parse_int_option(current_option, option_length);
+          coap_pkt->accept_num += 1;
+          printf("Accept [%u]\n", coap_pkt->content_type);
+        }
+        break;
+      case COAP_OPTION_IF_MATCH:
+        /*FIXME support multiple ETags */
+        coap_pkt->if_match_len = (uint8_t)(MIN(COAP_ETAG_LEN, option_length));
+        memcpy(coap_pkt->if_match, current_option, coap_pkt->if_match_len);
+        printf("If-Match %u [0x%02X%02X%02X%02X%02X%02X%02X%02X]\n", coap_pkt->if_match_len,
+          coap_pkt->if_match[0],
+          coap_pkt->if_match[1],
+          coap_pkt->if_match[2],
+          coap_pkt->if_match[3],
+          coap_pkt->if_match[4],
+          coap_pkt->if_match[5],
+          coap_pkt->if_match[6],
+          coap_pkt->if_match[7]
+        ); /*FIXME always prints 8 bytes */
+        break;
+      case COAP_OPTION_IF_NONE_MATCH:
+        coap_pkt->if_none_match = 1;
+        printf("If-None-Match\n");
+        break;
+
+      case COAP_OPTION_URI_HOST:
+        coap_pkt->uri_host = current_option;
+        coap_pkt->uri_host_len = option_length;
+        printf("Uri-Host [%.*s]\n", coap_pkt->uri_host_len, coap_pkt->uri_host);
+        break;
+      case COAP_OPTION_URI_PORT:
+        coap_pkt->uri_port = coap_parse_int_option(current_option, option_length);
+        printf("Uri-Port [%u]\n", coap_pkt->uri_port);
+        break;
+      case COAP_OPTION_URI_PATH:
+        /* coap_merge_multi_option() operates in-place on the IPBUF, but final packet field should be const string -> cast to string */
+        // coap_merge_multi_option( (char **) &(coap_pkt->uri_path), &(coap_pkt->uri_path_len), current_option, option_length, 0);
+        coap_add_multi_option( &(coap_pkt->uri_path), current_option, option_length, 1);
+        printf("Uri-Path [%.*s]\n", option_length, current_option);
+        break;
+      case COAP_OPTION_URI_QUERY:
+        /* coap_merge_multi_option() operates in-place on the IPBUF, but final packet field should be const string -> cast to string */
+        // coap_merge_multi_option( (char **) &(coap_pkt->uri_query), &(coap_pkt->uri_query_len), current_option, option_length, '&');
+        coap_add_multi_option( &(coap_pkt->uri_query), current_option, option_length, 1);
+        printf("Uri-Query [%.*s]\n", option_length, current_option);
+        break;
+
+      case COAP_OPTION_LOCATION_PATH:
+        coap_add_multi_option( &(coap_pkt->location_path), current_option, option_length, 1);
+        break;
+      case COAP_OPTION_LOCATION_QUERY:
+        /* coap_merge_multi_option() operates in-place on the IPBUF, but final packet field should be const string -> cast to string */
+        //coap_merge_multi_option( &(coap_pkt->location_query), &(coap_pkt->location_query_len), current_option, option_length, '&');
+        printf("Location-Query [%.*s]\n", option_length, current_option);
+        break;
+
+      case COAP_OPTION_PROXY_URI:
+        /*FIXME check for own end-point */
+        //coap_pkt->proxy_uri = current_option;
+        //coap_pkt->proxy_uri_len = option_length;
+        /*TODO length > 270 not implemented (actually not required) */
+        //PRINTF("Proxy-Uri NOT IMPLEMENTED [%.*s]\n", coap_pkt->proxy_uri_len, coap_pkt->proxy_uri);
+        coap_error_message = "This is a constrained server (Contiki)";
+        return PROXYING_NOT_SUPPORTED_5_05;
+//        break;
+
+      case COAP_OPTION_OBSERVE:
+        coap_pkt->observe = coap_parse_int_option(current_option, option_length);
+        printf("Observe [%lu]\n", coap_pkt->observe);
+        break;
+      case COAP_OPTION_BLOCK2:
+        coap_pkt->block2_num = coap_parse_int_option(current_option, option_length);
+        coap_pkt->block2_more = (coap_pkt->block2_num & 0x08)>>3;
+        coap_pkt->block2_size = 16 << (coap_pkt->block2_num & 0x07);
+        coap_pkt->block2_offset = (coap_pkt->block2_num & ~0x0000000F)<<(coap_pkt->block2_num & 0x07);
+        coap_pkt->block2_num >>= 4;
+        printf("Block2 [%lu%s (%u B/blk)]\n", coap_pkt->block2_num, coap_pkt->block2_more ? "+" : "", coap_pkt->block2_size);
+        break;
+      case COAP_OPTION_BLOCK1:
+        coap_pkt->block1_num = coap_parse_int_option(current_option, option_length);
+        coap_pkt->block1_more = (coap_pkt->block1_num & 0x08)>>3;
+        coap_pkt->block1_size = 16 << (coap_pkt->block1_num & 0x07);
+        coap_pkt->block1_offset = (coap_pkt->block1_num & ~0x0000000F)<<(coap_pkt->block1_num & 0x07);
+        coap_pkt->block1_num >>= 4;
+        printf("Block1 [%lu%s (%u B/blk)]\n", coap_pkt->block1_num, coap_pkt->block1_more ? "+" : "", coap_pkt->block1_size);
+        break;
+      case COAP_OPTION_SIZE:
+        coap_pkt->size = coap_parse_int_option(current_option, option_length);
+        printf("Size [%lu]\n", coap_pkt->size);
+        break;
+      default:
+        printf("unknown (%u)\n", option_number);
+        /* Check if critical (odd) */
+        if (option_number & 1)
+        {
+          coap_error_message = "Unsupported critical option";
+          return BAD_OPTION_4_02;
+        }
+    }
+
+    current_option += option_length;
+  } /* for */
+  printf("-Done parsing-------\n");
+
+
+
+  return NO_ERROR;
+}
+
 
 int
 coap_pdu_parse(unsigned char *data, size_t length, coap_pdu_t *pdu) {

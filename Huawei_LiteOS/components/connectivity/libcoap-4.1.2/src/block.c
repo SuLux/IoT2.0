@@ -12,7 +12,7 @@
 # include <assert.h>
 #endif
 
-#include "debug_coap.h"
+#include "debug.h"
 #include "block.h"
 
 #if (COAP_MAX_PDU_SIZE - 6) < (1 << (COAP_MAX_BLOCK_SZX + 4))

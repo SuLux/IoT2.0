@@ -215,8 +215,8 @@ LITE_OS_SEC_TEXT_INIT int osMain(void)
 
 
 /*****************************************************************************
- Function    : main
- Description : Main function entry
+ Function    : LOS_KernelInit
+ Description : LiteOS Initialize
  Input       : None
  Output      : None
  Return      : None
@@ -230,7 +230,6 @@ int LOS_KernelInit(void)
         return LOS_NOK;
     }
 		return LOS_OK;
-    /* Replace the dots (...) with your own code.  */
 }
 
 #ifdef __cplusplus

@@ -27,6 +27,7 @@
 #include "lwip/tcpip.h"
 #include "lwip/ip_addr.h"
 #include "net.h"
+#include "ssl.h"
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 /* Private macro -------------------------------------------------------------*/
@@ -91,7 +92,7 @@ void TIM3_IRQHandler(void)
 
 VOID task1()
 {
-		//UINT32 count = 0;
+		UINT32 count = 0;
 
 		ip_addr_t ipaddr;
 		ip_addr_t netmask;
@@ -110,9 +111,9 @@ VOID task1()
 		printf("LAN8720A BSP INIT AND COMFIGURE SUCCESS\n");
 
 		tcpip_init(NULL, NULL);
-		IP_ADDR4(&ipaddr,IP_ADDR0,IP_ADDR1,IP_ADDR2,IP_ADDR3);
-		IP_ADDR4(&netmask,255,255,255,0);
-		IP_ADDR4(&gw,192,168,0,1);
+		IP_ADDR4(&ipaddr,189,239,200,108);
+		IP_ADDR4(&netmask,255,255,0,0);
+		IP_ADDR4(&gw,189,239,1,1);
 		netif_add(&gnetif, &ipaddr, &netmask, &gw, NULL, 
 		&ethernetif_init, &tcpip_input);
 		netif_set_default(&gnetif);
@@ -126,7 +127,9 @@ VOID task1()
     {
         netif_set_down(&gnetif);
     }
-#if 1
+		extern int test_dtls(void);
+		test_dtls();
+#if 0
 	coap_address_t listenaddress;
 	coap_address_init(&listenaddress);
 	/* looks like a server address, but is used as end point for clients too */
@@ -175,7 +178,7 @@ UINT32 creat_task1()
     task_init_param.usTaskPrio = 0;
     task_init_param.pcName = "task1";
     task_init_param.pfnTaskEntry = (TSK_ENTRY_FUNC)task1;
-    task_init_param.uwStackSize = 0x400;
+    task_init_param.uwStackSize = 0x8000;
 
     uwRet = LOS_TaskCreate(&g_TskHandle, &task_init_param);
     if(LOS_OK != uwRet)

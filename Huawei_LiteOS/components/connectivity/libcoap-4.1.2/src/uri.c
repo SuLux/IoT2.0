@@ -17,7 +17,7 @@
 #include <ctype.h>
 
 #include "mem.h"
-#include "debug_coap.h"
+#include "debug.h"
 #include "pdu.h"
 #include "option.h"
 #include "uri.h"

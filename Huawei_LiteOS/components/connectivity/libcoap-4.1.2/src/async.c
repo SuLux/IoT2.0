@@ -16,7 +16,7 @@
 #include "coap_config.h"
 #include "coap.h"
 #include "async.h"
-#include "debug_coap.h"
+#include "debug.h"
 #include "mem.h"
 #include "utlist.h"
 

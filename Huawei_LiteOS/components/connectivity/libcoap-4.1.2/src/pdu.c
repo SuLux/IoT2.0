@@ -20,7 +20,7 @@
 #include <arpa/inet.h>
 #endif
 
-#include "debug_coap.h"
+#include "debug.h"
 #include "pdu.h"
 #include "option.h"
 #include "encode.h"

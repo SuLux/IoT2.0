@@ -251,7 +251,8 @@ static inline void * lwm2m_malloc(size_t s)
 }
 static inline void lwm2m_free(void * p)
 {
-    LOS_MemFree(m_aucSysMem0, p);
+    if(NULL != p)
+        LOS_MemFree(m_aucSysMem0, p);
 }
 // defined in uri.c
 lwm2m_uri_t * uri_decode(char * altPath, multi_option_t *uriPath);

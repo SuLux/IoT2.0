@@ -280,15 +280,14 @@ static uint8_t prv_register(lwm2m_context_t * contextP,
     }
 	coap_pdu_t *pdu = (coap_pdu_t *)(transaction->message);
 
-    //coap_set_header_uri_path(transaction->message, "/"URI_REGISTRATION_SEGMENT);//rd
+    
+    
     coap_add_option(pdu, COAP_OPTION_URI_PATH, URI_REGISTRATION_SEGMENT_LEN, URI_REGISTRATION_SEGMENT);
-    //coap_set_header_uri_query(transaction->message, query);
-	coap_add_option(pdu, COAP_OPTION_URI_QUERY, strlen(query),(const unsigned char *)query);
-    //coap_set_header_content_type(transaction->message, LWM2M_CONTENT_LINK);
 		unsigned char con[1] = {LWM2M_CONTENT_LINK};
     coap_add_option(pdu, COAP_OPTION_CONTENT_TYPE, 1, con);
-    //coap_set_payload(transaction->message, payload, payload_length);
-	coap_add_data(pdu, payload_length, payload);
+	
+    coap_set_header_uri_query(pdu, query);
+    coap_add_data(pdu, payload_length, payload);
 
     transaction->callback = prv_handleRegistrationReply;
     transaction->userData = (void *) server;

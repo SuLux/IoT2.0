@@ -21,6 +21,7 @@
 #include <stdarg.h>
 //#include <sys/time.h>
 #include "lwip/sockets.h"
+#include "internals.h"
 
 #ifndef LWM2M_MEMORY_TRACE
 
@@ -28,7 +29,12 @@
 char * lwm2m_strdup(const char * str)
 {
 //    return strdup(str);
-	return NULL;
+    int len = strlen(str) + 1;
+    void *new = lwm2m_malloc(len);
+    if (new == NULL)
+        return NULL;
+    return (char *)memcpy(new, str, len);
+
 }
 
 #endif
@@ -50,7 +56,7 @@ time_t lwm2m_gettime(void)
 //    }
 
     //return tv.tv_sec;
-	  return 60;
+    return 0;
 }
 
 void lwm2m_printf(const char * format, ...)

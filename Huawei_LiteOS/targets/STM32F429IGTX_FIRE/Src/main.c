@@ -33,13 +33,14 @@
 /* Private variables ---------------------------------------------------------*/
 KEY Key1,Key2;
 UINT32 g_TskHandle;
-struct netif gnetif;
 __IO uint32_t LocalTime = 0; /* this variable is used to create a time reference incremented by 10ms */
+
+struct netif gnetif;
+
 /* Private function prototypes -----------------------------------------------*/
 static void TIM3_Config(uint16_t period,uint16_t prescaler);
 /* Private functions ---------------------------------------------------------*/
 void TIM3_IRQHandler(void);
-extern void coap_main(coap_context_t  *ctx);
 void hardware_init(void)
 {
 	LED_GPIO_Config();
@@ -91,31 +92,33 @@ void TIM3_IRQHandler(void)
 
 VOID task1()
 {
-		//UINT32 count = 0;
 
-		ip_addr_t ipaddr;
-		ip_addr_t netmask;
-		ip_addr_t gw;
+    ip_addr_t ipaddr;
+    ip_addr_t netmask;
+    ip_addr_t gw;
+#if 0
+    UINT32 count = 0;
+    struct sockaddr_in client_addr;  
+    int sock_fd; 			   /* client socked */	
+    int err;  
 
-		struct sockaddr_in client_addr;  
-		int sock_fd; 			   /* client socked */	
-		int err;  
+    char udp_msg[] = "this is a UDP test package";
+    char udp_recv_msg[100];
+#endif
 
-		char udp_msg[] = "this is a UDP test package";
-		char udp_recv_msg[100];
-		printf("LAN8720A Ethernet Demo\n");
+    printf("LAN8720A Ethernet Demo\n");
 
-		/* Configure ethernet (GPIOs, clocks, MAC, DMA) */
-		ETH_BSP_Config();	
-		printf("LAN8720A BSP INIT AND COMFIGURE SUCCESS\n");
+    /* Configure ethernet (GPIOs, clocks, MAC, DMA) */
+    ETH_BSP_Config();	
+    printf("LAN8720A BSP INIT AND COMFIGURE SUCCESS\n");
 
-		tcpip_init(NULL, NULL);
-		IP_ADDR4(&ipaddr,IP_ADDR0,IP_ADDR1,IP_ADDR2,IP_ADDR3);
-		IP_ADDR4(&netmask,255,255,255,0);
-		IP_ADDR4(&gw,192,168,0,1);
-		netif_add(&gnetif, &ipaddr, &netmask, &gw, NULL, 
-		&ethernetif_init, &tcpip_input);
-		netif_set_default(&gnetif);
+    tcpip_init(NULL, NULL);
+    IP_ADDR4(&ipaddr,IP_ADDR0,IP_ADDR1,IP_ADDR2,IP_ADDR3);
+    IP_ADDR4(&netmask,255,255,255,0);
+    IP_ADDR4(&gw,192,168,0,1);
+    netif_add(&gnetif, &ipaddr, &netmask, &gw, NULL, 
+        &ethernetif_init, &tcpip_input);
+    netif_set_default(&gnetif);
   
     if (netif_is_link_up(&gnetif))
     {
@@ -126,13 +129,20 @@ VOID task1()
     {
         netif_set_down(&gnetif);
     }
+		
 #if 1
+    extern int lwm2m_main(int argc, char *argv[]);       
+    lwm2m_main(1, NULL);
+#endif
+		
+#if 0
 	coap_address_t listenaddress;
 	coap_address_init(&listenaddress);
 	/* looks like a server address, but is used as end point for clients too */
 	listenaddress.addr = *(IP_ANY_TYPE);
 	listenaddress.port = 5684;
 	coap_context_t * ctx = coap_new_context(&listenaddress);
+        extern void coap_main(coap_context_t  *ctx);
 	coap_main(ctx);
 #endif
 
@@ -219,9 +229,9 @@ UINT32 creat_task2()
 int main(void)
 {
     UINT32 uwRet = LOS_OK;
-		LOS_KernelInit();//内核初始化	
+    LOS_KernelInit();//内核初始化	
     hardware_init();//硬件初始化
-		uwRet = creat_task1();
+    uwRet = creat_task1();
     if(uwRet != LOS_OK)
     {
         return uwRet;

@@ -115,7 +115,7 @@ coap_pdu_init(unsigned char type, unsigned char code,
     pdu->pbuf = p;
 #endif
     coap_pdu_clear(pdu, size);
-    pdu->hdr->id = id;
+    pdu->hdr->id = lwip_htons(id);//modified by zjk;
     pdu->hdr->type = type;
     pdu->hdr->code = code;
   } 

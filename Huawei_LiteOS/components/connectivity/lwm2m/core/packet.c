@@ -220,7 +220,7 @@ void lwm2m_handle_packet(lwm2m_context_t * contextP,
         return;
     }
     coap_error_code = coap_parse_message(message, buffer, (uint16_t)length);
-    if (coap_error_code)
+    if (coap_error_code == NO_ERROR)
     {
         LOG_ARG("Parsed: ver %u, type %u, tkl %u, code %u.%.2u, mid %u, Content type: %d",
                 message->version, message->type, message->token_len, message->code >> 5, message->code & 0x1F, message->mid, message->content_type);

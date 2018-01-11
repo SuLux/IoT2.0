@@ -263,7 +263,7 @@ static uint8_t prv_set_value(lwm2m_data_t * dataP,
 
     case RES_O_CURRENT_TIME:
         //lwm2m_data_encode_int(time(NULL) + devDataP->time, dataP);
-		    lwm2m_data_encode_int(LOS_TickCountGet() + devDataP->time, dataP);
+        lwm2m_data_encode_int(lwm2m_gettime() + devDataP->time, dataP);
         return COAP_205_CONTENT;
 
     case RES_O_UTC_OFFSET:
@@ -444,7 +444,7 @@ static uint8_t prv_device_write(uint16_t instanceId,
         case RES_O_CURRENT_TIME:
             if (1 == lwm2m_data_decode_int(dataArray + i, &((device_data_t*)(objectP->userData))->time))
             {
-                ((device_data_t*)(objectP->userData))->time -= LOS_TickCountGet();//time(NULL);
+                ((device_data_t*)(objectP->userData))->time -= lwm2m_gettime();//time(NULL);
                 result = COAP_204_CHANGED;
             }
             else

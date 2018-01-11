@@ -22,6 +22,7 @@
 //#include <sys/time.h>
 #include "lwip/sockets.h"
 #include "internals.h"
+#include "los_sys.h"
 
 #ifndef LWM2M_MEMORY_TRACE
 
@@ -48,15 +49,7 @@ int lwm2m_strncmp(const char * s1,
 
 time_t lwm2m_gettime(void)
 {
-//    struct timeval tv;
-
-//    if (0 != gettimeofday(&tv, NULL))
-//    {
-//        return -1;
-//    }
-
-    //return tv.tv_sec;
-    return 0;
+    return (u32_t)(LOS_TickCountGet() / LOSCFG_BASE_CORE_TICK_PER_SECOND);
 }
 
 void lwm2m_printf(const char * format, ...)

@@ -286,7 +286,7 @@ lwm2m_object_t * get_object_location(void)
             data->altitude    = 8495.0000;
             data->radius      = 0.0;
             location_setVelocity(locationObj, 0, 0, 255); // 255: speedUncertainty not supported!
-            data->timestamp   = LOS_TickCountGet();//time(NULL);
+            data->timestamp   = lwm2m_gettime();//time(NULL);
             data->speed       = 0.0;
         }
         else

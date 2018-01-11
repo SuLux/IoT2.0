@@ -370,7 +370,7 @@ int lwm2m_step(lwm2m_context_t * contextP,
 
     LOG_ARG("timeoutP: %" PRId64, *timeoutP);
     tv_sec = lwm2m_gettime();
-    if (tv_sec) return COAP_500_INTERNAL_SERVER_ERROR;
+    if (tv_sec < 0) return COAP_500_INTERNAL_SERVER_ERROR;
 
 #ifdef LWM2M_CLIENT_MODE
     LOG_ARG("State: %s", STR_STATE(contextP->state));

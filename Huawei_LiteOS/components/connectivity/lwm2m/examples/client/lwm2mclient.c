@@ -818,7 +818,7 @@ int lwm2m_main(int argc, char *argv[])
     const char * server = NULL;
     const char * serverPort = LWM2M_STANDARD_PORT_STR;
     char * name = "testlwm2mclient";
-    int lifetime = 300;
+    int lifetime = 20;/*default 300 */
     int batterylevelchanging = 0;
     time_t reboot_time = 0;
     //int opt;
@@ -1193,7 +1193,7 @@ int lwm2m_main(int argc, char *argv[])
         }
         else
         {
-            tv.tv_sec = 60;
+            tv.tv_sec = 10;/*default 60*/
         }
         tv.tv_usec = 0;
 

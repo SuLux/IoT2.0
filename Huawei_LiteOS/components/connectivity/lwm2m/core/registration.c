@@ -281,9 +281,8 @@ static uint8_t prv_register(lwm2m_context_t * contextP,
 	coap_pdu_t *pdu = (coap_pdu_t *)(transaction->message);
 
     
-    
-    coap_add_option(pdu, COAP_OPTION_URI_PATH, URI_REGISTRATION_SEGMENT_LEN, URI_REGISTRATION_SEGMENT);
-		unsigned char con[1] = {LWM2M_CONTENT_LINK};
+    coap_set_header_uri_path(transaction->message, "/"URI_REGISTRATION_SEGMENT);//rd
+    unsigned char con[1] = {LWM2M_CONTENT_LINK};
     coap_add_option(pdu, COAP_OPTION_CONTENT_TYPE, 1, con);
 	
     coap_set_header_uri_query(pdu, query);
@@ -1302,7 +1301,7 @@ void registration_step(lwm2m_context_t * contextP,
         case STATE_REGISTERED:
         {
             time_t nextUpdate;
-            time_t interval;
+            INT32  interval;
 
             nextUpdate = targetP->lifetime;
             if (COAP_MAX_TRANSMIT_WAIT < nextUpdate)
@@ -1314,7 +1313,7 @@ void registration_step(lwm2m_context_t * contextP,
                 nextUpdate = nextUpdate >> 1;
             }
 
-            interval = targetP->registration + nextUpdate - currentTime;
+            interval = (INT32)(targetP->registration + nextUpdate) - (INT32)currentTime;
             if (0 >= interval)
             {
                 LOG("Updating registration");

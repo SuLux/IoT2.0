@@ -50,6 +50,10 @@ coap_pdu_clear(coap_pdu_t *pdu, size_t size) {
 
   /* data is NULL unless explicitly set by coap_add_data() */
   pdu->length = sizeof(coap_hdr_t);
+
+  pdu->uri_path      = NULL;
+  pdu->uri_query     = NULL;
+  pdu->location_path = NULL;
 }
 
 #ifdef WITH_LWIP
@@ -889,15 +893,13 @@ coap_set_header_uri_path(void *packet, const char *path)
       int i = 0;
 
       while (path[i] != 0 && path[i] != '/') i++;
-      coap_add_multi_option(&(coap_pkt->uri_path), (uint8_t *)path, i, 0);
-
+      coap_add_option(coap_pkt, COAP_OPTION_URI_PATH, i, (unsigned char *)path);
       if (path[i] == '/') i++;
       path += i;
       length += i;
   } while (path[0] != 0);
 
-  //SET_OPTION(coap_pkt, COAP_OPTION_URI_PATH);
-  coap_add_option(coap_pkt, COAP_OPTION_URI_PATH, length, (unsigned char *)path);
+  
   return length;
 }
 

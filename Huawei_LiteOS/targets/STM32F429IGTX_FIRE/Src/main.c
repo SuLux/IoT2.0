@@ -25,6 +25,7 @@
 #include "lwip/netif.h"
 #include "lwip/sockets.h"
 #include "lwip/tcpip.h"
+#include "lwip/dhcp.h"
 #include "lwip/ip_addr.h"
 #include "net.h"
 #include "ssl.h"
@@ -37,6 +38,8 @@ UINT32 g_TskHandle;
 __IO uint32_t LocalTime = 0; /* this variable is used to create a time reference incremented by 10ms */
 
 struct netif gnetif;
+#define USE_DHCP 1
+
 
 /* Private function prototypes -----------------------------------------------*/
 static void TIM3_Config(uint16_t period,uint16_t prescaler);
@@ -91,12 +94,17 @@ void TIM3_IRQHandler(void)
 	TIM_ClearITPendingBit(TIM3,TIM_IT_Update);  
 }
 
+#if USE_DHCP
+__IO uint8_t DHCP_state = DHCP_OFF;
+#endif
+
 VOID task1()
 {
 
     ip_addr_t ipaddr;
     ip_addr_t netmask;
     ip_addr_t gw;
+    struct dhcp *dhcp;
 #if 0
     UINT32 count = 0;
     struct sockaddr_in client_addr;  
@@ -114,9 +122,15 @@ VOID task1()
     printf("LAN8720A BSP INIT AND COMFIGURE SUCCESS\n");
 
     tcpip_init(NULL, NULL);
+#if USE_DHCP
+    ip_addr_set_zero_ip4(&ipaddr);
+    ip_addr_set_zero_ip4(&netmask);
+    ip_addr_set_zero_ip4(&gw);
+#else
     IP_ADDR4(&ipaddr,IP_ADDR0,IP_ADDR1,IP_ADDR2,IP_ADDR3);
-    IP_ADDR4(&netmask,255,255,255,0);
-    IP_ADDR4(&gw,192,168,0,1);
+    IP_ADDR4(&netmask,NETMASK_ADDR0,NETMASK_ADDR1,NETMASK_ADDR2,NETMASK_ADDR3);
+    IP_ADDR4(&gw,GW_ADDR0,GW_ADDR1,GW_ADDR2,GW_ADDR3);
+#endif
     netif_add(&gnetif, &ipaddr, &netmask, &gw, NULL, 
         &ethernetif_init, &tcpip_input);
     netif_set_default(&gnetif);
@@ -131,6 +145,82 @@ VOID task1()
     {
         netif_set_down(&gnetif);
     }
+	
+#if USE_DHCP
+    DHCP_state = DHCP_START;
+    for(;;)
+    {	
+    if(DHCP_state == DHCP_ADDRESS_ASSIGNED){
+        printf("get dhcp successfully,ip is %d-%d-%d-%d\n",
+			ip4_addr1(&gnetif.ip_addr),ip4_addr2(&gnetif.ip_addr),
+			ip4_addr3(&gnetif.ip_addr),ip4_addr4(&gnetif.ip_addr));
+		break;
+    }
+    switch (DHCP_state)
+    {
+    case DHCP_START:
+      {
+        ip_addr_set_zero_ip4(&gnetif.ip_addr);
+        ip_addr_set_zero_ip4(&gnetif.netmask);
+        ip_addr_set_zero_ip4(&gnetif.gw);       
+        dhcp_start(&gnetif);
+        DHCP_state = DHCP_WAIT_ADDRESS;
+      }
+      break;
+      
+    case DHCP_WAIT_ADDRESS:
+      {                
+        if (dhcp_supplied_address(&gnetif)) 
+        {
+          DHCP_state = DHCP_ADDRESS_ASSIGNED;	
+          
+          
+        }
+        else
+        {
+          dhcp = (struct dhcp *)netif_get_client_data(&gnetif, LWIP_NETIF_CLIENT_DATA_INDEX_DHCP);
+    
+          /* DHCP timeout */
+          if (dhcp->tries > 10)
+          {
+            printf("dhcp timeout!\n");
+            DHCP_state = DHCP_TIMEOUT;
+            
+            /* Stop DHCP */
+            dhcp_stop(&gnetif);
+            
+            /* Static address used */
+            IP_ADDR4(&ipaddr, IP_ADDR0 ,IP_ADDR1 , IP_ADDR2 , IP_ADDR3 );
+            IP_ADDR4(&netmask, NETMASK_ADDR0, NETMASK_ADDR1, NETMASK_ADDR2, NETMASK_ADDR3);
+            IP_ADDR4(&gw, GW_ADDR0, GW_ADDR1, GW_ADDR2, GW_ADDR3);
+            netif_set_addr(&gnetif, ip_2_ip4(&ipaddr), ip_2_ip4(&netmask), ip_2_ip4(&gw));
+
+           
+            
+          }
+          else
+          {
+                
+          }
+        }
+      }
+      break;
+  case DHCP_LINK_DOWN:
+    {
+      /* Stop DHCP */
+      dhcp_stop(&gnetif);
+      DHCP_state = DHCP_OFF; 
+    }
+    break;
+    default: break;
+    }
+    
+    /* wait 250 ms */
+    osDelay(250*4);
+    printf("wait for ip!!!\n");
+  }
+#endif
+	
 #if 0
 
     extern int test_dtls(void);
@@ -207,10 +297,10 @@ UINT32 creat_task1()
 
 VOID task2()
 {
-	UINT32 count = 0;
+	//UINT32 count = 0;
 	while(1)
 	{
-		printf("This is task 2,count is %d \r\n",count++);
+		//printf("This is task 2,count is %d \r\n",count++);
 		LOS_TaskDelay(1000);
 	}
 }

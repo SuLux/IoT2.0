@@ -37,6 +37,7 @@
 #include "stm32f4xx.h"
 /* Includes ------------------------------------------------------------------*/
 /* Exported types ------------------------------------------------------------*/
+#define DHCP_OFF                      0
 #define DHCP_START                    1
 #define DHCP_WAIT_ADDRESS             2
 #define DHCP_ADDRESS_ASSIGNED         3

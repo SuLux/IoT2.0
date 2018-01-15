@@ -29,7 +29,6 @@
 
 char * lwm2m_strdup(const char * str)
 {
-//    return strdup(str);
     int len = strlen(str) + 1;
     void *new = lwm2m_malloc(len);
     if (new == NULL)

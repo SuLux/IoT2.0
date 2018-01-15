@@ -441,8 +441,9 @@ void lwm2m_handle_packet(lwm2m_context_t * contextP,
         }
         /* Reuse input buffer for error message. */
         //coap_init_message(message, COAP_TYPE_ACK, coap_error_code, message->mid);
-		//    coap_pdu_init_ex(message, COAP_MESSAGE_ACK, coap_error_code, message->hdr->id, COAP_MAX_PDU_SIZE);
         //coap_set_payload(message, coap_error_message, strlen(coap_error_message));
+        message->hdr->type = COAP_MESSAGE_ACK;
+        message->hdr->code = coap_error_code; 
         coap_add_data(message, strlen((const char *)coap_error_message), coap_error_message);
         message_send(contextP, message, fromSessionH);
     }
@@ -458,29 +459,10 @@ uint8_t message_send(lwm2m_context_t * contextP,
                      coap_pdu_t * message,
                      void * sessionH)
 {
-    uint8_t result = COAP_500_INTERNAL_SERVER_ERROR;
-    //uint8_t * pktBuffer;
-    //size_t pktBufferLen = 0;
-//    size_t allocLen;
-
+    uint8_t result;
     LOG("Entering");
-    //allocLen = coap_serialize_get_size(message);
-    //allocLen = message->length;
-    //LOG_ARG("Size to allocate: %d", allocLen);
-    //if (allocLen == 0) return COAP_500_INTERNAL_SERVER_ERROR;
 
-    //pktBuffer = (uint8_t *)lwm2m_malloc(allocLen);
-    //if (pktBuffer != NULL)
-    {
-        //pktBufferLen = coap_serialize_message(message, pktBuffer);
-        //LOG_ARG("coap_serialize_message() returned %d", pktBufferLen);
-        //if (pktBufferLen)
-        {
-            //result = lwm2m_buffer_send(sessionH, pktBuffer, pktBufferLen, contextP->userData);
             result = lwm2m_buffer_send(sessionH, (uint8_t *)message->hdr, message->length, contextP->userData);
-        }
-        //lwm2m_free(pktBuffer);
-    }
 
     return result;
 }

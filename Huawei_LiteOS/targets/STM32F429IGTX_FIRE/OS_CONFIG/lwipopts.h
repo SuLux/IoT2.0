@@ -212,6 +212,10 @@ The STM32F4x7 allows computing and verifying the IP, UDP, TCP and ICMP checksums
  */
 #define LWIP_SOCKET                     1
 
+/**
+ * LWIP_DNS==1: Enable Domain Name System 
+ */
+#define LWIP_DNS                        1
 
 /*
    ----------------------------------------

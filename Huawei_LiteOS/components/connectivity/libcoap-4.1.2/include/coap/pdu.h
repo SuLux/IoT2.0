@@ -487,6 +487,7 @@ int coap_get_header_block2(void *packet, uint32_t *num, uint8_t *more, uint16_t 
 int coap_set_header_block1(void *packet, uint32_t num, uint8_t more, uint16_t size);
 int coap_get_header_block1(void *packet, uint32_t *num, uint8_t *more, uint16_t *size, uint32_t *offset);
 int coap_set_header_uri_query(void *packet, const char *query);
+int coap_set_header_uri_path_segment(void *packet, const char *segment);
 
 /**
  * Adds token of length @p len to @p pdu.

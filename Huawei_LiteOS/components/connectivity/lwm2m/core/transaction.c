@@ -155,7 +155,7 @@ lwm2m_transaction_t * transaction_new(void * sessionH,
                                       uint8_t* token)
 {
     lwm2m_transaction_t * transacP;
-    //int result;
+    int result;
 
     LOG_ARG("method: %d, altPath: \"%s\", mID: %d, token_len: %d",
             method, altPath, mID, token_len);
@@ -183,13 +183,12 @@ lwm2m_transaction_t * transaction_new(void * sessionH,
     if (altPath != NULL)
     {
         // TODO: Support multi-segment alternative path
-        //coap_set_header_uri_path_segment(transacP->message, altPath + 1);
+        coap_set_header_uri_path_segment(transacP->message, altPath + 1);
     }
     if (NULL != uriP)
     {
-    #if 0
-        char stringID[LWM2M_STRING_ID_MAX_LEN];
 
+        char stringID[LWM2M_STRING_ID_MAX_LEN];
         result = utils_intToText(uriP->objectId, (uint8_t*)stringID, LWM2M_STRING_ID_MAX_LEN);
         if (result == 0) goto error;
         stringID[result] = 0;
@@ -216,14 +215,13 @@ lwm2m_transaction_t * transaction_new(void * sessionH,
             stringID[result] = 0;
             coap_set_header_uri_path_segment(transacP->message, stringID);
         }
-	#endif
     }
     if (0 < token_len)
     {
         if (NULL != token)
         {
             //coap_set_header_token(transacP->message, token, token_len);
-			coap_add_token((coap_pdu_t *)(transacP->message), token_len, token);
+			      coap_add_token((coap_pdu_t *)(transacP->message), token_len, token);
         }
         else {
             // generate a token

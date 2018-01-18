@@ -1030,3 +1030,23 @@ coap_get_header_block1(void *packet, uint32_t *num, uint8_t *more, uint16_t *siz
 
   return 1;
 }
+int
+coap_set_header_uri_path_segment(void *packet, const char *segment)
+{
+  coap_pdu_t *coap_pkt = (coap_pdu_t *) packet;
+  int length;
+
+  if (segment == NULL || segment[0] == 0)
+  {
+      coap_add_multi_option(&(coap_pkt->uri_path), NULL, 0, 1);
+      length = 0;
+  }
+  else
+  {
+      length = strlen(segment);
+      coap_add_multi_option(&(coap_pkt->uri_path), (uint8_t *)segment, length, 0);
+  }
+
+  //SET_OPTION(coap_pkt, COAP_OPTION_URI_PATH);
+  return length;
+}

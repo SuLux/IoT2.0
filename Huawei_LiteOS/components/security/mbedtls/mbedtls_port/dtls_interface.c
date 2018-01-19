@@ -36,7 +36,7 @@
 
 #include <string.h>
 
-#include "dtls_sockets.h"
+#include "mbedtls/net_sockets.h"
 #include "mbedtls/debug.h"
 #include "mbedtls/ssl.h"
 #include "mbedtls/entropy.h"
@@ -47,7 +47,7 @@
 
 #define SERVER_PORT "4433"
 #define SERVER_NAME "dtls_server"
-#define SERVER_ADDR "189.239.200.107" /* forces IPv4 */
+#define SERVER_ADDR "192.168.1.100" /* forces IPv4 */
 #define MESSAGE     "Test DTLS LiteOS V2"
 
 #define READ_TIMEOUT_MS 1000

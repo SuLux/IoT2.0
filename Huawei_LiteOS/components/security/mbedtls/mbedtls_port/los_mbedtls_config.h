@@ -32,6 +32,12 @@
 #define _CRT_SECURE_NO_DEPRECATE 1
 #endif
 
+
+
+/*定义liteos系统*/
+#define __liteos_with_lwip__
+
+
 /**
  * \name SECTION: System support
  *
@@ -2063,7 +2069,7 @@
  *
  * This module provides networking routines.
  */
-//#define MBEDTLS_NET_C
+#define MBEDTLS_NET_C
 
 /**
  * \def MBEDTLS_OID_C
@@ -2444,7 +2450,7 @@
  *
  * This module is used by the HAVEGE random number generator.
  */
-//#define MBEDTLS_TIMING_C
+#define MBEDTLS_TIMING_C
 
 /**
  * \def MBEDTLS_VERSION_C

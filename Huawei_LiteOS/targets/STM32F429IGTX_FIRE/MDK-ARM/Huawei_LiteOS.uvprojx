@@ -332,7 +332,7 @@
               <MiscControls></MiscControls>
               <Define>STM32F429_439xx,USE_STDPERIPH_DRIVER,USE_MBED_TLS,MBEDTLS_CONFIG_FILE=&lt;los_mbedtls_config.h&gt;,WITH_LWIP,LWM2M_LITTLE_ENDIAN,LWM2M_CLIENT_MODE,NDEBUG</Define>
               <Undefine></Undefine>
-              <IncludePath>..\Inc;..\..\..\drivers\boards\STM32F429IGTX_FIRE\dwt;..\..\..\drivers\boards\STM32F429IGTX_FIRE\key;..\..\..\drivers\boards\STM32F429IGTX_FIRE\LAN8742A;..\..\..\drivers\boards\STM32F429IGTX_FIRE\led;..\..\..\drivers\boards\STM32F429IGTX_FIRE\usart;..\..\..\drivers\bsp\stm32\STM32F4xx_StdPeriph_Driver\inc;..\..\..\kernel\compat\cmsis;..\..\..\kernel\compat\cmsis\1.0;..\..\..\kernel\compat\cmsis\2.0;..\..\..\kernel\base\include;..\..\..\kernel\include;..\OS_CONFIG;..\..\..\arch\arm\cortex-m4;..\..\..\components\net\lwip-2.0.3\src\include;..\..\..\components\net\lwip-2.0.3\src\include\posix;..\..\..\components\net\lwip_port;..\..\..\components\net\lwip_port\OS;..\..\..\components\connectivity\libcoap-4.1.2\include\coap;..\..\..\components\connectivity\libcoap-4.1.2\examples\lwip;..\..\..\components\connectivity\lwm2m\core;..\..\..\components\connectivity\lwm2m\examples\shared;..\..\..\components\security\mbedtls\mbedtls_port;..\..\..\components\security\mbedtls\mbedtls-2.6.0\include;..\..\..\components\security\mbedtls\mbedtls-2.6.0\include\mbedtls</IncludePath>
+              <IncludePath>..\Inc;..\..\..\drivers\boards\STM32F429IGTX_FIRE\dwt;..\..\..\drivers\boards\STM32F429IGTX_FIRE\key;..\..\..\drivers\boards\STM32F429IGTX_FIRE\LAN8742A;..\..\..\drivers\boards\STM32F429IGTX_FIRE\led;..\..\..\drivers\boards\STM32F429IGTX_FIRE\usart;..\..\..\drivers\bsp\stm32\STM32F4xx_StdPeriph_Driver\inc;..\..\..\kernel\compat\cmsis;..\..\..\kernel\compat\cmsis\1.0;..\..\..\kernel\compat\cmsis\2.0;..\..\..\kernel\base\include;..\..\..\kernel\include;..\OS_CONFIG;..\..\..\arch\arm\cortex-m4;..\..\..\components\net\lwip-2.0.3\src\include;..\..\..\components\net\lwip_port;..\..\..\components\net\lwip_port\OS;..\..\..\components\connectivity\libcoap-4.1.2\include\coap;..\..\..\components\connectivity\libcoap-4.1.2\examples\lwip;..\..\..\components\connectivity\lwm2m\core;..\..\..\components\connectivity\lwm2m\examples\shared;..\..\..\components\security\mbedtls\mbedtls_port;..\..\..\components\security\mbedtls\mbedtls-2.6.0\include;..\..\..\components\security\mbedtls\mbedtls-2.6.0\include\mbedtls</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -1566,14 +1566,9 @@
           <GroupName>mbedtls_port</GroupName>
           <Files>
             <File>
-              <FileName>dtls_client.c</FileName>
+              <FileName>dtls_interface.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\components\security\mbedtls\mbedtls_port\dtls_client.c</FilePath>
-            </File>
-            <File>
-              <FileName>dtls_sockets.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\components\security\mbedtls\mbedtls_port\dtls_sockets.c</FilePath>
+              <FilePath>..\..\..\components\security\mbedtls\mbedtls_port\dtls_interface.c</FilePath>
             </File>
             <File>
               <FileName>entropy_hardware_poll.c</FileName>

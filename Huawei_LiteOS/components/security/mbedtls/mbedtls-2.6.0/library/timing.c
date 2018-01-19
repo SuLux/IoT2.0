@@ -39,7 +39,7 @@
 #if !defined(MBEDTLS_TIMING_ALT)
 
 #if !defined(unix) && !defined(__unix__) && !defined(__unix) && \
-    !defined(__APPLE__) && !defined(_WIN32)
+    !defined(__APPLE__) && !defined(_WIN32) && !defined(__liteos_with_lwip__)
 #error "This module only works on Unix and Windows, see MBEDTLS_TIMING_C in config.h"
 #endif
 
@@ -55,6 +55,18 @@
 struct _hr_time
 {
     LARGE_INTEGER start;
+};
+
+#elif defined(__liteos_with_lwip__)
+#include "dwt.h"
+
+struct timeval {
+  long    tv_sec;         /* seconds */
+  long    tv_usec;        /* and microseconds */
+};
+struct _hr_time
+{
+    struct timeval start;
 };
 
 #else
@@ -217,8 +229,33 @@ unsigned long mbedtls_timing_hardclock( void )
 
 #if !defined(HAVE_HARDCLOCK)
 
+#if defined(__liteos_with_lwip__)
 #define HAVE_HARDCLOCK
+static int hardclock_init = 0;
+static struct timeval tv_init;
+unsigned long mbedtls_timing_hardclock( void )
+{
+    unsigned long  delta;
+    struct timeval offset;
 
+    unsigned long long ticks = DWT_CYCCNT;
+    unsigned long uscount = ticks/(SystemCoreClock/(1000*1000));
+    offset.tv_sec = uscount /(1000*1000);
+    offset.tv_usec = uscount %(1000*1000);
+    if( hardclock_init == 0 )
+    {
+        tv_init.tv_sec = offset.tv_sec;
+        tv_init.tv_usec = offset.tv_usec;
+        hardclock_init = 1;
+        return 0;
+    }
+    delta = (offset.tv_sec - tv_init.tv_sec)*1000000
+        +(offset.tv_usec - tv_init.tv_usec) ;
+    return (delta);
+}
+
+#else
+#define HAVE_HARDCLOCK
 static int hardclock_init = 0;
 static struct timeval tv_init;
 
@@ -236,6 +273,7 @@ unsigned long mbedtls_timing_hardclock( void )
     return( ( tv_cur.tv_sec  - tv_init.tv_sec  ) * 1000000
           + ( tv_cur.tv_usec - tv_init.tv_usec ) );
 }
+#endif
 #endif /* !HAVE_HARDCLOCK */
 
 volatile int mbedtls_timing_alarmed = 0;
@@ -280,6 +318,29 @@ void mbedtls_set_alarm( int seconds )
     alarmMs = seconds * 1000;
     CloseHandle( CreateThread( NULL, 0, TimerProc, NULL, 0, &ThreadId ) );
 }
+
+#elif defined(__liteos_with_lwip__)
+
+unsigned long mbedtls_timing_get_timer(struct mbedtls_timing_hr_time *val,int reset)
+{
+	unsigned long  delta;
+	struct timeval offset;
+	struct _hr_time *t = (struct _hr_time *)val;
+	unsigned long long ticks = DWT_CYCCNT;
+	unsigned long uscount = ticks/(SystemCoreClock/(1000*1000));
+	offset.tv_sec = uscount /(1000*1000);
+	offset.tv_usec = uscount %(1000*1000);
+	if(reset)
+	{
+		t->start.tv_sec = offset.tv_sec;
+		t->start.tv_usec = offset.tv_usec;
+		return 0;
+	}
+	delta = (offset.tv_sec - t->start.tv_sec)*1000
+			+(offset.tv_usec - t->start.tv_usec) /1000;
+	return (delta);
+}
+
 
 #else /* _WIN32 && !EFIX64 && !EFI32 */
 
@@ -357,7 +418,7 @@ int mbedtls_timing_get_delay( void *data )
 
 #endif /* !MBEDTLS_TIMING_ALT */
 
-#if defined(MBEDTLS_SELF_TEST)
+#if defined(MBEDTLS_SELF_TEST) && !defined(__liteos_with_lwip__)
 
 /*
  * Busy-waits for the given number of milliseconds.

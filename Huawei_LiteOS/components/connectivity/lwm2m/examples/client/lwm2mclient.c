@@ -72,19 +72,19 @@
 #include <ctype.h>
 //#include <sys/select.h>
 //#include <sys/types.h>
-#include <sys/socket.h>
+#include <lwip/sockets.h>
 //#include <netinet/in.h>
 //#include <arpa/inet.h>
-#include <netdb.h>
+#include <lwip/netdb.h>
 //#include <sys/stat.h>
-#include <errno.h>
+#include <lwip/errno.h>
 #include <signal.h>
 #include "internals.h"
 
 #define MAX_PACKET_SIZE 1024
 #define DEFAULT_SERVER_IPV6 "[::1]"
 //#define DEFAULT_SERVER_IPV4 "10.20.24.140"
-#define DEFAULT_SERVER_IPV4 "192.168.1.104"
+#define DEFAULT_SERVER_IPV4 "192.168.1.100"
 
 int g_reboot = 0;
 static int g_quit = 0;
@@ -1207,7 +1207,7 @@ int lwm2m_main(int argc, char *argv[])
          *  - Secondly it adjusts the timeout value (default 60s) depending on the state of the transaction
          *    (eg. retransmission) and the time between the next operation
          */
-				time_t sec = (time_t)tv.tv_sec;
+        time_t sec = (time_t)tv.tv_sec;
         result = lwm2m_step(lwm2mH, &sec);
         fprintf(stdout, " -> State: ");
         switch (lwm2mH->state)

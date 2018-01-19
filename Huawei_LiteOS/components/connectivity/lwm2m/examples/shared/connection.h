@@ -23,7 +23,7 @@
 //#include <netinet/in.h>
 //#include <arpa/inet.h>
 #include <lwip/netdb.h>
-#include <sys/socket.h>
+#include <lwip/sockets.h>
 //#include <sys/stat.h>
 #include <liblwm2m.h>
 #include <lwip/sockets.h>

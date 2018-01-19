@@ -18,10 +18,10 @@
 //#include <sys/select.h>
 //#include <sys/types.h>
 //#include <sys/stat.h>
-#include <sys/socket.h>
+#include <lwip/sockets.h>
 //#include <netinet/in.h>
 //#include <arpa/inet.h>
-#include <netdb.h>
+#include <lwip/netdb.h>
 
 #include "coap.h"
 #include "coap_list.h"

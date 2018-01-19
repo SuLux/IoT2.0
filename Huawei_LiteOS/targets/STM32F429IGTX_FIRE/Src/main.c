@@ -221,7 +221,7 @@ VOID task1()
   }
 #endif
 	
-#if 0
+#if 1
 
     extern int test_dtls(void);
     test_dtls();

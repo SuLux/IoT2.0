@@ -285,10 +285,10 @@ static struct pbuf * low_level_input(struct netif *netif)
     {
         printf("+++++++++LWIP Malloc failed!\r\n");
     }
-    if(len > 300)
-    {
-        printf("\n low_level_input::recv big data(%ld)\n",len);
-    }
+    //if(len > 300)
+    //{
+    //    printf("\n low_level_input::recv big data(%ld)\n",len);
+    //}
   }
   
   if (p != NULL)

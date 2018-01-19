@@ -301,6 +301,8 @@ static uint8_t prv_register(lwm2m_context_t * contextP,
 
     lwm2m_free(payload);
     lwm2m_free(query);
+    coap_delete_pdu(transaction->message);
+    transaction->message = NULL;
     server->status = STATE_REG_PENDING;
 
     return COAP_NO_ERROR;
@@ -376,6 +378,8 @@ static int prv_updateRegistration(lwm2m_context_t * contextP,
     {
         lwm2m_free(payload);
     }
+    coap_delete_pdu(transaction->message);
+    transaction->message = NULL;
     return COAP_NO_ERROR;
 }
 

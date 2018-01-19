@@ -169,10 +169,6 @@ lwm2m_transaction_t * transaction_new(void * sessionH,
     if (NULL == transacP) return NULL;
     memset(transacP, 0, sizeof(lwm2m_transaction_t));
 
-    transacP->message = lwm2m_malloc(sizeof(coap_pdu_t));
-    if (NULL == transacP->message) goto error;
-
-//    coap_init_message(transacP->message, COAP_MESSAGE_CON, method, mID);
     transacP->message = (void *)coap_pdu_init(COAP_MESSAGE_CON, method, 
 	      mID, COAP_MAX_PDU_SIZE);
 
@@ -246,6 +242,8 @@ lwm2m_transaction_t * transaction_new(void * sessionH,
 
 error:
     LOG("Exiting on failure");
+    coap_delete_pdu(transacP->message);
+    transacP->message = NULL;
     lwm2m_free(transacP);
     return NULL;
 }

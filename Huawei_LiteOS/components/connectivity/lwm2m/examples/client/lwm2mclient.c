@@ -84,7 +84,7 @@
 #define MAX_PACKET_SIZE 1024
 #define DEFAULT_SERVER_IPV6 "[::1]"
 //#define DEFAULT_SERVER_IPV4 "10.20.24.140"
-#define DEFAULT_SERVER_IPV4 "192.168.1.100"
+#define DEFAULT_SERVER_IPV4 "192.168.1.104"
 
 int g_reboot = 0;
 static int g_quit = 0;

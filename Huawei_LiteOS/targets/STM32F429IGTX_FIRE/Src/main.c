@@ -38,7 +38,7 @@ UINT32 g_TskHandle;
 __IO uint32_t LocalTime = 0; /* this variable is used to create a time reference incremented by 10ms */
 
 struct netif gnetif;
-#define USE_DHCP 1
+#define USE_DHCP 0
 
 
 /* Private function prototypes -----------------------------------------------*/
@@ -104,7 +104,6 @@ VOID task1()
     ip_addr_t ipaddr;
     ip_addr_t netmask;
     ip_addr_t gw;
-    struct dhcp *dhcp;
 #if 0
     UINT32 count = 0;
     struct sockaddr_in client_addr;  
@@ -123,6 +122,7 @@ VOID task1()
 
     tcpip_init(NULL, NULL);
 #if USE_DHCP
+    struct dhcp *dhcp;
     ip_addr_set_zero_ip4(&ipaddr);
     ip_addr_set_zero_ip4(&netmask);
     ip_addr_set_zero_ip4(&gw);

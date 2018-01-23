@@ -9,9 +9,8 @@
         .global  LOS_StartToRun
         .global  osTaskSchedule
         .global  SVC_Handler
-        .global  PendSV_Handler
-	.global  LOS_IntNumGet
-	.global  osDisableIRQ
+        .global  osPendSV
+        .global  LOS_IntNumGet
         
         .extern  g_stLosTask
         .extern  g_pfnTskSwitchHook
@@ -23,7 +22,7 @@
 .equ	OS_NVIC_PENDSVSET,           0x10000000
 .equ	OS_TASK_STATUS_RUNNING,      0x0010
 
-	.section .text 
+    .section .text 
     .thumb
 
 LOS_StartToRun:
@@ -74,10 +73,6 @@ LOS_IntNumGet:
     mrs     r0, ipsr
     bx      lr
 
-osDisableIRQ:
-    cpsid   I
-    bx      lr
-
 LOS_IntLock:
     mrs     r0, PRIMASK
     cpsid   I
@@ -115,8 +110,8 @@ SVC_Handler:
 
 
   
-    .type PendSV_Handler, %function
-PendSV_Handler:
+    .type osPendSV, %function
+osPendSV:
     mrs     r12, PRIMASK
     cpsid   I
 

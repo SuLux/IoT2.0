@@ -97,7 +97,7 @@ VOID LOS_Schedule(VOID)
  *****************************************************************************/
 LITE_OS_SEC_TEXT_MINOR VOID osTaskExit(VOID)
 {
-    __disable_irq();
+    LOS_IntLock();
     while(1);
 }
 

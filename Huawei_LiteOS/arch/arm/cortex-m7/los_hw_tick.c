@@ -33,6 +33,7 @@
  *---------------------------------------------------------------------------*/
 
 #include "los_tick.ph"
+
 #include "los_base.h"
 #include "los_task.ph"
 #include "los_swtmr.h"
@@ -63,7 +64,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 osTickStart(VOID)
         return LOS_ERRNO_TICK_CFG_INVALID;
     }
 
-    osSetVector(SysTick_IRQn, (HWI_PROC_FUNC)osTickHandler, NULL);
+    osSetVector(SysTick_IRQn, osTickHandler);
 
     g_uwCyclesPerTick = OS_SYS_CLOCK / LOSCFG_BASE_CORE_TICK_PER_SECOND;
     g_ullTickCount = 0;

@@ -35,6 +35,7 @@
 #include "los_base.h"
 #include "los_task.ph"
 #include "los_hw.h"
+#include "los_sys.ph"
 #include "los_priqueue.ph"
 
 #ifdef __cplusplus
@@ -69,7 +70,7 @@ VOID LOS_Schedule(VOID)
     uvIntSave = LOS_IntLock();
 
     /* Find the highest task */
-    g_stLosTask.pstNewTask = LOS_DL_LIST_ENTRY(osPriqueueTop(), LOS_TASK_CB, stPendList);
+    g_stLosTask.pstNewTask = LOS_DL_LIST_ENTRY(osPriqueueTop(), LOS_TASK_CB, stPendList);/*lint !e413*/
 
     /* In case that running is not highest then reschedule */
     if (g_stLosTask.pstRunTask != g_stLosTask.pstNewTask)
@@ -96,7 +97,7 @@ VOID LOS_Schedule(VOID)
  *****************************************************************************/
 LITE_OS_SEC_TEXT_MINOR VOID osTaskExit(VOID)
 {
-    __asm ("cpsid i");
+    LOS_IntLock();
     while(1);
 }
 
@@ -111,14 +112,10 @@ LITE_OS_SEC_TEXT_MINOR VOID osTaskExit(VOID)
  *****************************************************************************/
 LITE_OS_SEC_TEXT_INIT VOID *osTskStackInit(UINT32 uwTaskID, UINT32 uwStackSize, VOID *pTopStack)
 {
-    UINT32 uwIdx;
     TSK_CONTEXT_S  *pstContext;
 
     /*initialize the task stack, write magic num to stack top*/
-    for (uwIdx = 1; uwIdx < (uwStackSize/sizeof(UINT32)); uwIdx++)
-    {
-        *((UINT32 *)pTopStack + uwIdx) = OS_TASK_STACK_INIT;
-    }
+    memset(pTopStack, OS_TASK_STACK_INIT, uwStackSize);
     *((UINT32 *)(pTopStack)) = OS_TASK_MAGIC_WORD;
 
     pstContext    = (TSK_CONTEXT_S *)(((UINT32)pTopStack + uwStackSize) - sizeof(TSK_CONTEXT_S));

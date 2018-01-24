@@ -40,33 +40,30 @@ extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
 
-/*lint -save -e40 -e522 -e533*/
-
 UINT32  g_vuwIntCount = 0;
-/*lint -restore*/
-extern LITE_OS_SEC_TEXT VOID osTickHandler(VOID);
-//extern  VOID HardFault_Handler(VOID);
-HWI_PROC_FUNC m_pstHwiSlaveForm[OS_M3_VECTOR_CNT] = {0};
-__attribute__ ((section(".data.vector"))) HWI_PROC_FUNC m_pstHwiForm[OS_M3_VECTOR_CNT] =
+#ifdef LOS_LOCATION_VECTOR_IAR
+#pragma  location = ".vector"
+#endif
+LITE_OS_SEC_VEC HWI_PROC_FUNC m_pstHwiForm[OS_M3_VECTOR_CNT] =
 {
-    0,  // [0] Top of Stack
-    Reset_Handler,            // [1] reset
-    osHwiDefaultHandler,    // [2] NMI Handler
-    0,    // [3] Hard Fault Handler
-    osHwiDefaultHandler,    // [4] MPU Fault Handler
-    osHwiDefaultHandler,    // [5] Bus Fault Handler
-    osHwiDefaultHandler,    // [6] Usage Fault Handler
-    0,                        // [7] Reserved
-    0,                        // [8] Reserved
-    0,                        // [9] Reserved
-    0,                        // [10] Reserved
-    osHwiDefaultHandler,    // [11] SVCall Handler
-    osHwiDefaultHandler,    // [12] Debug Monitor Handler
-    0,                        // [13] Reserved
-    osPendSV,               // [14] PendSV Handler
-    osTickHandler,            // [15] SysTick Handler
+  0,                    // [0] Top of Stack
+  Reset_Handler,        // [1] reset
+  osHwiDefaultHandler,  // [2] NMI Handler
+  osHwiDefaultHandler,  // [3] Hard Fault Handler
+  osHwiDefaultHandler,  // [4] MPU Fault Handler
+  osHwiDefaultHandler,  // [5] Bus Fault Handler
+  osHwiDefaultHandler,  // [6] Usage Fault Handler
+  0,                    // [7] Reserved
+  0,                    // [8] Reserved
+  0,                    // [9] Reserved
+  0,                    // [10] Reserved
+  osHwiDefaultHandler,  // [11] SVCall Handler
+  osHwiDefaultHandler,  // [12] Debug Monitor Handler
+  0,                    // [13] Reserved
+  osPendSV,             // [14] PendSV Handler
+  osHwiDefaultHandler,  // [15] SysTick Handler
 };
-
+HWI_PROC_FUNC m_pstHwiSlaveForm[OS_M3_VECTOR_CNT] = {0};
 
 /*****************************************************************************
  Function    : osIntNumGet
@@ -77,8 +74,10 @@ __attribute__ ((section(".data.vector"))) HWI_PROC_FUNC m_pstHwiForm[OS_M3_VECTO
  *****************************************************************************/
 LITE_OS_SEC_TEXT_MINOR UINT32 osIntNumGet(VOID)
 {
+    UINT32 uwIntNum;
 
-    return LOS_GetxPSR();
+    uwIntNum = LOS_IntNumGet();
+    return uwIntNum;
 }
 
 /*****************************************************************************
@@ -103,11 +102,13 @@ LITE_OS_SEC_TEXT_MINOR VOID  osHwiDefaultHandler(VOID)
  Output      : None
  Return      : None
  *****************************************************************************/
+
 LITE_OS_SEC_TEXT VOID  osInterrupt(VOID)
 {
     UINT32 uwHwiIndex;
     UINT32 uwIntSave;
 
+    SCB->SCR &= (UINT32)~((UINT32)SCB_SCR_SLEEPDEEP_Msk);
     uwIntSave = LOS_IntLock();
     g_vuwIntCount++;
     LOS_IntRestore(uwIntSave);
@@ -122,7 +123,6 @@ LITE_OS_SEC_TEXT VOID  osInterrupt(VOID)
     uwIntSave = LOS_IntLock();
     g_vuwIntCount--;
     LOS_IntRestore(uwIntSave);
-
 }
 
 /*****************************************************************************
@@ -141,11 +141,9 @@ LITE_OS_SEC_TEXT_INIT VOID osHwiInit()
     }
 
     /* Interrupt vector table location */
-    *(volatile UINT32 *)OS_NVIC_VTOR = (UINT32)m_pstHwiForm;
+    SCB->VTOR = (UINT32)m_pstHwiForm;
 
-    *(volatile UINT32 *)OS_NVIC_AIRCR = (0x05FA0000 | OS_NVIC_AIRCR_PRIGROUP << 8);
-
-    return;
+    NVIC_SetPriorityGrouping(OS_NVIC_AIRCR_PRIGROUP);
 }
 
 /*****************************************************************************
@@ -166,6 +164,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_HwiCreate( HWI_HANDLE_T  uwHwiNum,
                                       HWI_ARG_T     uwArg )
 {
     UINTPTR uvIntSave;
+
     if (NULL == pfnHandler)
     {
         return OS_ERRNO_HWI_PROC_FUNC_NULL;
@@ -178,19 +177,18 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_HwiCreate( HWI_HANDLE_T  uwHwiNum,
     {
         return OS_ERRNO_HWI_ALREADY_CREATED;
     }
-    if ((usHwiPrio > OS_HWI_PRIO_LOWEST) || (usHwiPrio < OS_HWI_PRIO_HIGHEST))
+    if (usHwiPrio > OS_HWI_PRIO_LOWEST)
     {
         return OS_ERRNO_HWI_PRIO_INVALID;
     }
-
 
     uvIntSave = LOS_IntLock();
 
     osSetVector(uwHwiNum, pfnHandler);
 
-    nvicSetIRQ(uwHwiNum);
+    NVIC_EnableIRQ((IRQn_Type)uwHwiNum);
 
-    nvicSetIrqPRI(uwHwiNum, usHwiPrio);
+    NVIC_SetPriority((IRQn_Type)uwHwiNum, usHwiPrio);
 
     LOS_IntRestore(uvIntSave);
 
@@ -214,7 +212,7 @@ LITE_OS_SEC_TEXT_INIT UINT32 LOS_HwiDelete(HWI_HANDLE_T uwHwiNum)
         return OS_ERRNO_HWI_NUM_INVALID;
     }
 
-    nvicClrIRQ(uwHwiNum);
+    NVIC_DisableIRQ((IRQn_Type)uwHwiNum);
 
     uwIntSave = LOS_IntLock();
 

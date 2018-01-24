@@ -1041,7 +1041,7 @@ int lwm2m_main(int argc, char *argv[])
     }
     data.securityObjP = objArray[0];
 
-    objArray[1] = get_server_object(serverId, "U", lifetime, false);
+    objArray[1] = get_server_object(serverId, "UQS", lifetime, false);
     if (NULL == objArray[1])
     {
         fprintf(stderr, "Failed to create server object\r\n");

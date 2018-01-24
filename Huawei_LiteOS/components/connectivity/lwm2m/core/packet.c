@@ -361,8 +361,6 @@ void lwm2m_handle_packet(lwm2m_context_t * contextP,
 
                 coap_error_code = message_send(contextP, response, fromSessionH);
 
-                lwm2m_free(response->data);
-                response->data = NULL;
                 //response->payload_len = 0;
             }
             else if (coap_error_code != COAP_IGNORE)

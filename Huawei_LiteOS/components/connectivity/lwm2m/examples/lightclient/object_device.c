@@ -68,7 +68,7 @@
 
 #define PRV_MANUFACTURER      "Open Mobile Alliance"
 #define PRV_MODEL_NUMBER      "Lightweight M2M Client"
-#define PRV_BINDING_MODE      "U"
+#define PRV_BINDING_MODE      "UQS"
 
 // Resource Id's:
 #define RES_O_MANUFACTURER          0

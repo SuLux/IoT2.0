@@ -168,7 +168,7 @@ uint8_t dm_handleRequest(lwm2m_context_t * contextP,
     uint8_t result;
     lwm2m_media_type_t format;
 
-    LOG_ARG("Code: %02X, server status: %s", message->code, STR_STATUS(serverP->status));
+    LOG_ARG("Code: %02X, server status: %s", message->hdr->code, STR_STATUS(serverP->status));
     LOG_URI(uriP);
 	
     coap_opt_iterator_t opt_iter;

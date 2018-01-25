@@ -994,7 +994,7 @@ int lwm2m_main(int argc, char *argv[])
     if (psk != NULL)
     {
         pskLen = strlen(psk) / 2;
-        pskBuffer = malloc(pskLen);
+        pskBuffer = lwm2m_malloc(pskLen);
 
         if (NULL == pskBuffer)
         {

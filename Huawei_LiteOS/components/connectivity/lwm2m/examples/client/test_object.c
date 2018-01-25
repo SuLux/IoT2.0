@@ -155,6 +155,10 @@ static uint8_t prv_read(uint16_t instanceId,
     {
         switch ((*dataArrayP)[i].id)
         {
+        case 0:
+            printf("*********find resource id(%d-%d-%d) ***********************\n",
+                objectP->objID,instanceId,(*dataArrayP)[i].id);
+            
         case 1:
             lwm2m_data_encode_int(targetP->test, *dataArrayP + i);
             break;

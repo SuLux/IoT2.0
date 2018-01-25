@@ -164,7 +164,7 @@ uint8_t observe_handleRequest(lwm2m_context_t * contextP,
     lwm2m_watcher_t * watcherP;
     uint32_t count;
   	coap_opt_iterator_t opt_iter;
-    LOG_ARG("Code: %02X, server status: %s", message->code, STR_STATUS(serverP->status));
+    LOG_ARG("Code: %02X, server status: %s", message->hdr->code, STR_STATUS(serverP->status));
     LOG_URI(uriP);
 
     coap_get_header_observe(message, &count);
@@ -337,7 +337,7 @@ uint8_t observe_setParameters(lwm2m_context_t * contextP,
     watcherP = prv_getWatcher(contextP, uriP, serverP);
     if (watcherP == NULL) return COAP_500_INTERNAL_SERVER_ERROR;
 
-    // Check rule “lt” value + 2*”stp” values < “gt” value
+    // Check rule “lt�?value + 2*”stp�?values < “gt�?value
     if ((((attrP->toSet | (watcherP->parameters?watcherP->parameters->toSet:0)) & ~attrP->toClear) & ATTR_FLAG_NUMERIC) == ATTR_FLAG_NUMERIC)
     {
         float gt;

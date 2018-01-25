@@ -20,6 +20,7 @@
 #include <string.h>
 #include <ctype.h>
 #include "connection.h"
+#include "internals.h"
 
 // from commandline.c
 void output_buffer(FILE * stream, uint8_t * buffer, int length, int indent);
@@ -86,7 +87,7 @@ connection_t * connection_new_incoming(connection_t * connList,
 {
     connection_t * connP;
 
-    connP = (connection_t *)malloc(sizeof(connection_t));
+    connP = (connection_t *)lwm2m_malloc(sizeof(connection_t));
     if (connP != NULL)
     {
         connP->sock = sock;

@@ -333,7 +333,7 @@
             <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls></MiscControls>
-              <Define>STM32F40_41xxx</Define>
+              <Define>STM32F40_41xxx, LOS_KERNEL_DEBUG_OUT, LOS_KERNEL_TEST_KEIL_SWSIMU</Define>
               <Undefine></Undefine>
               <IncludePath>..\Inc;..\..\..\drivers\bsp\stm32\STM32F4xx_StdPeriph_Driver\inc;..\..\..\kernel\compat\cmsis;..\..\..\kernel\compat\cmsis\1.0;..\..\..\kernel\compat\cmsis\2.0;..\..\..\kernel\base\include;..\..\..\kernel\include;..\OS_CONFIG;..\..\..\arch\arm\cortex-m4;..\..\..\examples\include;..\..\..\drivers\boards\STM32F412ZG-NUCLEO</IncludePath>
             </VariousControls>

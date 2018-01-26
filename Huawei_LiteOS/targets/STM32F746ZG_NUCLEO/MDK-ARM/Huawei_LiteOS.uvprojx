@@ -333,7 +333,7 @@
             <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls></MiscControls>
-              <Define>STM32F746xx</Define>
+              <Define>STM32F746xx, LOS_KERNEL_DEBUG_OUT, LOS_KERNEL_TEST_KEIL_SWSIMU</Define>
               <Undefine></Undefine>
               <IncludePath>..\Inc;..\..\..\kernel\compat\cmsis;..\..\..\kernel\compat\cmsis\1.0;..\..\..\kernel\compat\cmsis\2.0;..\..\..\kernel\base\include;..\..\..\kernel\include;..\OS_CONFIG;..\..\..\arch\arm\cortex-m7;..\..\..\examples\include;..\..\..\drivers\boards\STM32F746ZG-NUCLEO</IncludePath>
             </VariousControls>

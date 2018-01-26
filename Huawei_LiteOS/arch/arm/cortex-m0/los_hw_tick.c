@@ -35,11 +35,17 @@
 #include "los_tick.ph"
 
 #include "los_base.h"
-#include "los_task.h"
+#include "los_task.ph"
 #include "los_swtmr.h"
 #include "los_hwi.h"
 
+#ifdef __cplusplus
+#if __cplusplus
+extern "C" {
+#endif /* __cpluscplus */
+#endif /* __cpluscplus */
 
+/*lint -save -e40 -e10 -e26 -e1013*/
 /*****************************************************************************
 Function   : osTickStart
 Description: Configure Tick Interrupt Start
@@ -49,24 +55,28 @@ return  : LOS_OK - Success , or LOS_ERRNO_TICK_CFG_INVALID - failed
 *****************************************************************************/
 LITE_OS_SEC_TEXT_INIT UINT32 osTickStart(VOID)
 {
+    UINT32 uwRet;
+
     if ((0 == OS_SYS_CLOCK)
         || (0 == LOSCFG_BASE_CORE_TICK_PER_SECOND)
-        || (LOSCFG_BASE_CORE_TICK_PER_SECOND > OS_SYS_CLOCK))
+        || (LOSCFG_BASE_CORE_TICK_PER_SECOND > OS_SYS_CLOCK))/*lint !e506*/
     {
         return LOS_ERRNO_TICK_CFG_INVALID;
     }
-#ifdef LOS_HWI_ENABLE
-    m_pstHwiForm[OS_EXC_SYS_TICK] = (HWI_PROC_FUNC)osInterrupt;
-    m_pstHwiSlaveForm[OS_EXC_SYS_TICK] = osTickHandler;
-#endif
+
+    osSetVector(SysTick_IRQn, osTickHandler);
+
+    g_uwCyclesPerTick = OS_SYS_CLOCK / LOSCFG_BASE_CORE_TICK_PER_SECOND;
     g_ullTickCount = 0;
 
-    *(volatile UINT32 *)OS_SYSTICK_RELOAD_REG = OS_SYS_CLOCK/LOSCFG_BASE_CORE_TICK_PER_SECOND;
+    uwRet = SysTick_Config(OS_SYS_CLOCK/LOSCFG_BASE_CORE_TICK_PER_SECOND);
+    if (uwRet == 1)
+    {
+        return LOS_ERRNO_TICK_PER_SEC_TOO_SMALL;
+    }
 
-    *(volatile UINT32 *)OS_SYSTICK_CONTROL_REG = 0x7;
     return LOS_OK;
 }
-
 
 /*****************************************************************************
 Function   : LOS_GetCpuCycle
@@ -82,25 +92,23 @@ LITE_OS_SEC_TEXT_MINOR VOID LOS_GetCpuCycle(UINT32 *puwCntHi, UINT32 *puwCntLo)
     UINT64 ullCycle;
     UINT32 uwIntSta;
     UINT32 uwHwCycle;
-    UINT32 uwCyclesPerTick;
     UINTPTR uwIntSave;
 
     uwIntSave = LOS_IntLock();
 
     ullSwTick = g_ullTickCount;
 
-    uwHwCycle = *(volatile UINT32*)OS_SYSTICK_CURRENT_REG;
-    uwIntSta  = *(volatile UINT32*)OS_NVIC_INT_CTRL;
+    uwHwCycle = SysTick->VAL;
+    uwIntSta  = SCB->ICSR;
 
     /*tick has come, but may interrupt environment, not counting the Tick interrupt response, to do +1 */
-    if (((uwIntSta & 0x1FFFFU) != 0))
+    if (((uwIntSta & 0x4000000) != 0))
     {
-        uwHwCycle = *(volatile UINT32*)OS_SYSTICK_CURRENT_REG;
+        uwHwCycle = SysTick->VAL;
         ullSwTick++;
     }
 
-    uwCyclesPerTick = OS_SYS_CLOCK / LOSCFG_BASE_CORE_TICK_PER_SECOND;
-    ullCycle = (((ullSwTick) * uwCyclesPerTick) + (uwCyclesPerTick - uwHwCycle));
+    ullCycle = (((ullSwTick) * g_uwCyclesPerTick) + (g_uwCyclesPerTick - uwHwCycle));
     *puwCntHi = ullCycle >> 32;
     *puwCntLo = ullCycle & 0xFFFFFFFFU;
 
@@ -108,53 +116,8 @@ LITE_OS_SEC_TEXT_MINOR VOID LOS_GetCpuCycle(UINT32 *puwCntHi, UINT32 *puwCntLo)
 
     return;
 }
-
-
-/*****************************************************************************
-Function   : LOS_GetSystickCycle
-Description: Get Sys tick cycle count
-Input   : none
-output  : puwCntHi  --- SysTick count High 4 byte
-          puwCntLo  --- SysTick count Low 4 byte
-return  : none
-*****************************************************************************/
-LITE_OS_SEC_TEXT_MINOR VOID LOS_GetSystickCycle(UINT32 *puwCntHi, UINT32 *puwCntLo)
-{
-    UINT64 ullSwTick;
-    UINT64 ullCycle;
-    UINT32 uwIntSta;
-    UINT32 uwHwCycle;
-    UINTPTR uwIntSave;
-    UINT32 uwSystickLoad;
-    UINT32 uwSystickCur;
-
-    uwIntSave = LOS_IntLock();
-
-    ullSwTick = g_ullTickCount;
-
-    uwSystickLoad = *(volatile UINT32*)OS_SYSTICK_RELOAD_REG;
-    uwSystickCur = *(volatile UINT32*)OS_SYSTICK_CURRENT_REG;
-    uwIntSta  = *(volatile UINT32*)OS_NVIC_INT_CTRL;
-
-    uwHwCycle = uwSystickLoad - uwSystickCur;
-
-    /*tick has come, but may interrupt environment, not counting the Tick interrupt response, to do +1 */
-    if (((uwIntSta & 0x1FFFFU) != 0))
-    {
-        uwHwCycle = uwSystickLoad - uwSystickCur;
-        ullSwTick++;
-    }
-
-    ullCycle = uwHwCycle + ullSwTick * uwSystickLoad;
-    *puwCntHi = ullCycle >> 32;
-    *puwCntLo = ullCycle & 0xFFFFFFFFU;
-
-    LOS_IntRestore(uwIntSave);
-
-    return;
+#ifdef __cplusplus
+#if __cplusplus
 }
-
-
-
-
-
+#endif /* __cpluscplus */
+#endif /* __cpluscplus */

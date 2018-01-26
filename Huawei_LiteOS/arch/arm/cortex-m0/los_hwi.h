@@ -40,14 +40,12 @@
 
 #include "los_base.h"
 #include "los_sys.h"
-#include "non_os.h"
+
 #ifdef __cplusplus
 #if __cplusplus
 extern "C" {
 #endif /* __cplusplus */
 #endif /* __cplusplus */
-
-//#define LOS_HWI_ENABLE
 
 /**
  * @ingroup los_hwi
@@ -90,14 +88,13 @@ typedef VOID (**HWI_VECTOR_FUNC)(void);
  * @ingroup los_hwi
  * Count of interrupts.
  */
-#ifdef LOS_HWI_ENABLE
 extern UINT32  g_vuwIntCount;
-#endif
+
 /**
  * @ingroup los_hwi
  * An interrupt is active.
  */
-#define OS_INT_ACTIVE               (non_os_is_this_interrupt_context())
+#define OS_INT_ACTIVE               (g_vuwIntCount > 0)
 
 /**
  * @ingroup los_hwi
@@ -121,7 +118,7 @@ extern UINT32  g_vuwIntCount;
  * @ingroup los_hwi
  * Maximum number of hardware support for hardware interrupt.
  */
-#define OS_HWI_MAX_NUM              47
+#define OS_HWI_MAX_NUM              48
 
 /**
  * @ingroup los_hwi
@@ -137,19 +134,19 @@ extern UINT32  g_vuwIntCount;
 
 /**
  * @ingroup los_hwi
- * Count of M3 system interrupt vector.
+ * Count of M0 system interrupt vector.
  */
 #define OS_M0_SYS_VECTOR_CNT        16
 
 /**
  * @ingroup los_hwi
- * Count of M3 IRQ interrupt vector.
+ * Count of M0 IRQ interrupt vector.
  */
 #define OS_M0_IRQ_VECTOR_CNT        32
 
 /**
  * @ingroup los_hwi
- * Count of M3 interrupt vector.
+ * Count of M0 interrupt vector.
  */
 #define OS_M0_VECTOR_CNT            (OS_M0_SYS_VECTOR_CNT + OS_M0_IRQ_VECTOR_CNT)
 
@@ -159,7 +156,7 @@ extern UINT32  g_vuwIntCount;
  *
  * Value: 0x02000900
  *
- * Solution: Ensure that the interrupt number is valid. The value range of the interrupt number applicable for a Cortex-A7 platform is [OS_USER_HWI_MIN,OS_USER_HWI_MAX].
+ * Solution: Ensure that the interrupt number is valid. The value range of the interrupt number applicable for a Cortex-M0 platform is [0,32].
  */
 #define OS_ERRNO_HWI_NUM_INVALID                            LOS_ERRNO_OS_ERROR(LOS_MOD_HWI, 0x00)
 
@@ -209,7 +206,7 @@ extern UINT32  g_vuwIntCount;
  *
  * Value: 0x02000905
  *
- * Solution: Ensure that the interrupt priority is valid. The value range of the interrupt priority applicable for a Cortex-A7 platform is [0,15].
+ * Solution: Ensure that the interrupt priority is valid. The value range of the interrupt priority applicable for a Cortex-M0 platform is [OS_HWI_PRIO_HIGHEST,OS_HWI_PRIO_LOWEST].
  */
 #define OS_ERRNO_HWI_PRIO_INVALID                           LOS_ERRNO_OS_ERROR(LOS_MOD_HWI, 0x05)
 
@@ -237,13 +234,13 @@ extern UINT32  g_vuwIntCount;
  * @ingroup los_hwi
  * AIRCR register priority group parameter .
  */
-#define OS_NVIC_AIRCR_PRIGROUP      0
+#define OS_NVIC_AIRCR_PRIGROUP      7
 
 /**
  * @ingroup los_hwi
  * Boot interrupt vector table.
  */
-extern UINT32 g_pfnVectors[];
+extern UINT32 _BootVectors[];
 
 /**
  * @ingroup los_hwi
@@ -256,6 +253,18 @@ extern UINT32 g_pfnVectors[];
  * SysTick reload value register.
  */
 #define OS_SYSTICK_RELOAD_REG       0xE000E014
+
+/**
+ * @ingroup los_hwi
+ * interrupt pending register.
+ */
+#define OS_NVIC_SETPEND_BASE        0xE000E200
+
+/**
+ * @ingroup los_hwi
+ * interrupt active register.
+ */
+#define OS_NVIC_INT_ACT_BASE        0xE000E300
 
 /**
  * @ingroup los_hw
@@ -274,18 +283,6 @@ extern UINT32 g_pfnVectors[];
  * Interrupt enable register for 0-31.
  */
 #define OS_NVIC_SETENA_BASE         0xE000E100
-
-/**
- * @ingroup los_hwi
- * interrupt pending register.
- */
-#define OS_NVIC_SETPEND_BASE        0xE000E200
-
-/**
- * @ingroup los_hwi
- * ?D??ACTIVE????????
- */
-#define OS_NVIC_INT_ACT_BASE    0xE000E300
 
 /**
  * @ingroup los_hwi
@@ -323,7 +320,7 @@ extern UINT32 g_pfnVectors[];
  */
 #define nvicSetIRQ(uwHwiNum)   \
     do { \
-         *(volatile UINT32 *)(OS_NVIC_SETENA_BASE) = 1 << ((uwHwiNum) & 0x1F);  \
+         *(volatile UINT32 *)(OS_NVIC_SETENA_BASE + ((uwHwiNum >> 5) << 2)) = 1 << ((uwHwiNum) & 0x1F);  \
        } while (0)
 
 /**
@@ -332,7 +329,7 @@ extern UINT32 g_pfnVectors[];
  */
 #define nvicClrIRQ(uwHwiNum)   \
     do { \
-         *(volatile UINT32 *)(OS_NVIC_CLRENA_BASE) = 1 << ((uwHwiNum) & 0x1F);  \
+         *(volatile UINT32 *)(OS_NVIC_CLRENA_BASE + ((uwHwiNum >> 5) << 2)) = 1 << ((uwHwiNum) & 0x1F);  \
        } while (0)
 
 /**
@@ -341,7 +338,7 @@ extern UINT32 g_pfnVectors[];
  */
 #define nvicSetIrqPRI(uwHwiNum, ucPri) \
     do { \
-         *(volatile UINT8 *)(OS_NVIC_PRI_BASE + (uwHwiNum >> 2)) = 1 << ((ucPri + 1) << 3 - 1);    \
+         *(volatile UINT8 *)(OS_NVIC_PRI_BASE + (uwHwiNum)) = (UINT8)(0x80 | (ucPri));    \
        } while (0)
 
 /**
@@ -413,7 +410,6 @@ extern UINT32 g_pfnVectors[];
  */
 #define OS_EXC_SYS_TICK        15
 
-#ifdef LOS_HWI_ENABLE
 /**
  * @ingroup los_hwi
  * hardware interrupt form mapping handling function array.
@@ -425,6 +421,8 @@ extern HWI_PROC_FUNC m_pstHwiForm[OS_M0_VECTOR_CNT];
  * hardware interrupt Slave form mapping handling function array.
  */
 extern HWI_PROC_FUNC m_pstHwiSlaveForm[OS_M0_VECTOR_CNT];
+
+extern VOID Reset_Handler(VOID);
 
 /**
  * @ingroup los_hwi
@@ -445,12 +443,12 @@ extern HWI_PROC_FUNC m_pstHwiSlaveForm[OS_M0_VECTOR_CNT];
  * @attention
  * <ul>
  * <li>The hardware interrupt module is usable only when the configuration item for hardware interrupt tailoring is enabled.</li>
- * <li>Hardware interrupt number value range: [OS_USER_HWI_MIN,OS_USER_HWI_MAX]. The value range applicable for a Cortex-A7 platform is [32,95].</li>
+ * <li>Hardware interrupt number value range: [OS_HWI_MIN,OS_HWI_MAX]. The value range applicable for a Cortex-M0 platform is [0,32].</li>
  * <li>OS_HWI_MAX_NUM specifies the maximum number of interrupts that can be created.</li>
  * <li>Before executing an interrupt on a platform, refer to the chip manual of the platform.</li>
  * </ul>
  *
- * @param  uwHwiNum   [IN] Type#HWI_HANDLE_T: hardware interrupt number. The value range applicable for a Cortex-A7 platform is [32,95].
+ * @param  uwHwiNum   [IN] Type#HWI_HANDLE_T: hardware interrupt number. The value range applicable for a Cortex-M0 platform is [0,32].
  * @param  usHwiPrio  [IN] Type#HWI_PRIOR_T: hardware interrupt priority. Ignore this parameter temporarily.
  * @param  usMode     [IN] Type#HWI_MODE_T: hardware interrupt mode. Ignore this parameter temporarily.
  * @param  pfnHandler [IN] Type#HWI_PROC_FUNC: interrupt handler used when a hardware interrupt is triggered.
@@ -468,7 +466,9 @@ extern HWI_PROC_FUNC m_pstHwiSlaveForm[OS_M0_VECTOR_CNT];
  */
 extern UINT32 LOS_HwiCreate( HWI_HANDLE_T  uwHwiNum,
                            HWI_PRIOR_T   usHwiPrio,
-                           HWI_PROC_FUNC pfnHandler
+                           HWI_MODE_T    usMode,
+                           HWI_PROC_FUNC pfnHandler,
+                           HWI_ARG_T     uwArg
                            );
 
 
@@ -534,8 +534,7 @@ extern UINT32 osIntNumGet(VOID);
  * @see None.
  * @since Huawei LiteOS V100R001C00
  */
-extern VOID Reset_Handler(VOID);
-//extern VOID  osResetVector(VOID);
+extern VOID  osResetVector(VOID);
 
 
 
@@ -557,7 +556,7 @@ extern VOID Reset_Handler(VOID);
  * @see None.
  * @since Huawei LiteOS V100R001C00
  */
-extern void  HardFault_Handler(void);
+extern VOID  osHwiDefaultHandler(VOID);
 
 
 
@@ -580,7 +579,7 @@ extern void  HardFault_Handler(void);
  * @see None.
  * @since Huawei LiteOS V100R001C00
  */
-extern VOID  PendSV_Handler(VOID);
+extern VOID  osPendSV(VOID);
 
 
 
@@ -602,9 +601,9 @@ extern VOID  PendSV_Handler(VOID);
  * @see None.
  * @since Huawei LiteOS V100R001C00
  */
-extern UINT32 osExcInit(VOID);
+//extern VOID osExcInit(VOID);
 
-#endif
+
 
  /**
  *@ingroup los_hwi
@@ -679,9 +678,6 @@ extern UINTPTR LOS_IntLock(VOID);
  */
 extern VOID LOS_IntRestore(UINTPTR uvIntSave);
 
-extern VOID LOS_GetCpuCycle(UINT32 *puwCntHi, UINT32 *puwCntLo);
-
-extern VOID LOS_GetSystickCycle(UINT32 *puwCntHi, UINT32 *puwCntLo);
 
 
 /**
@@ -694,12 +690,12 @@ extern VOID LOS_GetSystickCycle(UINT32 *puwCntHi, UINT32 *puwCntLo);
  * @attention
  * <ul>
  * <li>The hardware interrupt module is usable only when the configuration item for hardware interrupt tailoring is enabled.</li>
- * <li>Hardware interrupt number value range: [OS_USER_HWI_MIN,OS_USER_HWI_MAX]. The value range applicable for a Cortex-A7 platform is [32,95].</li>
+ * <li>Hardware interrupt number value range: [OS_HWI_MIN,OS_HWI_MAX]. The value range applicable for a Cortex-M0 platform is [0,32].</li>
  * <li>OS_HWI_MAX_NUM specifies the maximum number of interrupts that can be created.</li>
  * <li>Before executing an interrupt on a platform, refer to the chip manual of the platform.</li>
  * </ul>
  *
- * @param  uwHwiNum   [IN] Type#HWI_HANDLE_T: hardware interrupt number. The value range applicable for a Cortex-A7 platform is [32,95].
+ * @param  uwHwiNum   [IN] Type#HWI_HANDLE_T: hardware interrupt number. The value range applicable for a Cortex-M0 platform is [0,32].
  *
  * @retval #OS_ERRNO_HWI_NUM_INVALID              0x02000900: Invalid interrupt number.
  * @retval #LOS_OK                                  0: The interrupt is successfully delete.
@@ -708,9 +704,30 @@ extern VOID LOS_GetSystickCycle(UINT32 *puwCntHi, UINT32 *puwCntLo);
  * @see None.
  * @since Huawei LiteOS V100R001C00
  */
-#ifdef LOS_HWI_ENABLE
 extern UINT32 LOS_HwiDelete(HWI_HANDLE_T uwHwiNum);
-#endif
+
+/**
+ *@ingroup los_hwi
+ *@brief Get interrupt number.
+ *
+ *@par Description:
+ *<ul>
+ *<li>This API is used to get irq number .</li>
+ *</ul>
+ *@attention
+ *<ul>
+ *<li>This API can be called only when an irq come up .</li>
+ *</ul>
+ *
+ *@param None.
+ *
+ *@retval UINT32 irq number.
+ *@par Dependency:
+ *<ul><li>los_hwi.h: the header file that contains the API declaration.</li></ul>
+ *@see None
+ *@since Huawei LiteOS V100R001C00
+ */
+extern UINT32 LOS_IntNumGet(VOID);
 
 #ifdef __cplusplus
 #if __cplusplus

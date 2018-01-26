@@ -40,6 +40,7 @@
 #define _LOS_HW_H
 
 #include "los_base.h"
+
 #ifdef __cplusplus
 #if __cplusplus
 extern "C" {
@@ -56,7 +57,7 @@ extern "C" {
  * @ingroup los_hw
  * Trigger a task.
  */
-#define osTaskTrap()                __asm("   TRAP    #31")
+#define osTaskTrap()                asm("   TRAP    #31")
 
 /**
  * @ingroup los_hw
@@ -155,7 +156,8 @@ extern VOID osSchedule(VOID);
  * @since Huawei LiteOS V100R001C00
  */
 extern VOID LOS_Schedule(VOID);
-LITE_OS_SEC_TEXT_MINOR VOID osTaskExit(VOID);
+
+
 
 /**
  * @ingroup  los_hw
